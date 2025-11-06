@@ -1,0 +1,156 @@
+(defpoll cpu-usage :interval "2s" 
+  "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1 | cut -d'.' -f1")
+
+(defpoll ram-usage :interval "2s" 
+  "free | grep Mem | awk '{printf \"%.0f\", $3/$2 * 100}'")
+
+(defpoll ram-info :interval "5s"
+  "free -h | grep Mem | awk '{print $3 \" / \" $2}'")
+
+(defpoll disk-usage :interval "10s" 
+  "df -h / | awk 'NR==2 {print $5}' | sed 's/%//'")
+
+(defpoll disk-info :interval "30s"
+  "df -h / | awk 'NR==2 {print $3 \" / \" $2}'")
+
+(defpoll uptime-info :interval "60s"
+  "uptime -p | sed 's/up //'")
+
+(defpoll time-info :interval "60s"
+  "date '+%H:%M'")
+
+(defwindow system-panel
+  :monitor 0
+  :geometry (geometry 
+    :x "15px"
+    :y "45px"
+    :width "380px"
+    :height "600px"
+    :anchor "top right")
+  :stacking "overlay"
+  :windowtype "normal"
+  
+  (box :class "panel" :orientation "v" :space-evenly false
+    
+    (box :class "stats-section" :orientation "h" :space-evenly true :spacing 15
+      
+      (box :class "stat-circle" :orientation "v"
+        (circular-progress 
+          :value cpu-usage
+          :class "progress-cpu"
+          :thickness 8
+          (box :class "stat-content" :orientation "v" :space-evenly false
+            (label :text "󰻠" :class "stat-icon cpu-icon")
+            (label :text "${cpu-usage}%" :class "stat-value")
+            (label :text "CPU" :class "stat-label"))))
+      
+      (box :class "stat-circle" :orientation "v"
+        (circular-progress 
+          :value ram-usage
+          :class "progress-ram"
+          :thickness 8
+          (box :class "stat-content" :orientation "v" :space-evenly false
+            (label :text "󰍛" :class "stat-icon ram-icon")
+            (label :text "${ram-usage}%" :class "stat-value")
+            (label :text "RAM" :class "stat-label"))))
+      
+      (box :class "stat-circle" :orientation "v"
+        (circular-progress 
+          :value disk-usage
+          :class "progress-disk"
+          :thickness 8
+          (box :class "stat-content" :orientation "v" :space-evenly false
+            (label :text "󰋊" :class "stat-icon disk-icon")
+            (label :text "${disk-usage}%" :class "stat-value")
+            (label :text "DISK" :class "stat-label")))))
+    
+    (box :class "info-extra" :orientation "v" :space-evenly false
+      (label :text "󰍛 ${ram-info}" :class "info-text")
+      (label :text "󰋊 ${disk-info}" :class "info-text"))
+    
+    (box :class "actions-section" :orientation "v" :space-evenly false
+      (label :text "ACOES RAPIDAS" :class "actions-title")
+      
+      (box :class "actions-row" :orientation "h" :space-evenly true :spacing 10
+        (button :class "action-btn power" 
+                :onclick "systemctl poweroff"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰐥" :class "action-icon")
+            (label :text "Desligar" :class "action-label")))
+        
+        (button :class "action-btn reboot" 
+                :onclick "systemctl reboot"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰜉" :class "action-icon")
+            (label :text "Reiniciar" :class "action-label")))
+        
+        (button :class "action-btn logout" 
+                :onclick "hyprctl dispatch exit"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰍃" :class "action-icon")
+            (label :text "Sair" :class "action-label")))
+        
+        (button :class "action-btn lock" 
+                :onclick "hyprlock &"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰌾" :class "action-icon")
+            (label :text "Bloquear" :class "action-label"))))
+      
+      (box :class "actions-row" :orientation "h" :space-evenly true :spacing 10
+        (button :class "action-btn sleep" 
+                :onclick "systemctl suspend"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰒲" :class "action-icon")
+            (label :text "Suspender" :class "action-label")))
+        
+        (button :class "action-btn terminal" 
+                :onclick "ghostty ~/&"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰆍" :class "action-icon")
+            (label :text "Terminal" :class "action-label")))
+        
+        (button :class "action-btn files" 
+                :onclick "dolphin &"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰉋" :class "action-icon")
+            (label :text "Arquivos" :class "action-label")))
+        
+        (button :class "action-btn settings" 
+                :onclick "ghostty -e vim ~/.config/hypr/ &"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰒓" :class "action-icon")
+            (label :text "Configs" :class "action-label"))))
+      
+      (box :class "actions-row" :orientation "h" :space-evenly true :spacing 10
+        (button :class "action-btn network" 
+                :onclick "nm-connection-editor &"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰖩" :class "action-icon")
+            (label :text "Rede" :class "action-label")))
+        
+        (button :class "action-btn monitor" 
+                :onclick "ghostty -e btop &"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰍛" :class "action-icon")
+            (label :text "Monitor" :class "action-label")))
+        
+        (button :class "action-btn notif" 
+                :onclick "dunstctl history-pop"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰂚" :class "action-icon")
+            (label :text "Notificacoes" :class "action-label")))
+        
+        (button :class "action-btn close" 
+                :onclick "eww close system-panel"
+          (box :orientation "v" :space-evenly false
+            (label :text "󰅖" :class "action-icon")
+            (label :text "Fechar" :class "action-label")))))
+    
+    (box :class "info-section" :orientation "h" :space-evenly true
+      (box :orientation "h" :space-evenly false :spacing 6
+        (label :text "󰔚" :class "info-icon")
+        (label :text uptime-info :class "info-text"))
+      
+      (box :orientation "h" :space-evenly false :spacing 6
+        (label :text "󰥔" :class "info-icon")
+        (label :text time-info :class "info-text")))))

@@ -1,0 +1,3 @@
+cursor-style = underline
+custom-shader = /home/sam/.config/ghostty/WIP.glsl
+custom-shader = /home/sam/.config/ghostty/party_sparks.glsl

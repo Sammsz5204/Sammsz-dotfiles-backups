@@ -1,0 +1,122 @@
+* {
+  all: unset;
+  font-family: JetBrainsMono Nerd Font;
+}
+
+.panel {
+  background-color: #282828;
+  border: 2px solid #504945;
+  border-radius: 12px;
+}
+
+.stats-section {
+  background-color: #32302f;
+  padding: 20px 15px;
+  border-bottom: 2px solid #504945;
+}
+
+.stat-circle {
+  min-width: 90px;
+  min-height: 90px;
+}
+
+.stat-icon {
+  font-size: 20px;
+}
+
+.cpu-icon { color: #83a598; }
+.ram-icon { color: #d3869b; }
+.disk-icon { color: #b8bb26; }
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ebdbb2;
+}
+
+.stat-label {
+  font-size: 20px;
+  color: #928374;
+}
+
+.progress-cpu { color: #83a598; }
+.progress-ram { color: #d3869b; }
+.progress-disk { color: #b8bb26; }
+
+circular-progress trough {
+  background-color: #3c3836;
+  min-width: 90px;
+  min-height: 90px;
+}
+
+.info-extra {
+  background-color: #32302f;
+  padding: 0 20px 15px 20px;
+  border-bottom: 2px solid #504945;
+}
+
+.info-text {
+  font-size: 17px;
+  color: #665c54;
+}
+
+.actions-section {
+  padding: 15px;
+}
+
+.actions-title {
+  font-size: 10px;
+  color: #928374;
+  padding: 0 5px 8px 5px;
+}
+
+.actions-row {
+  margin-bottom: 8px;
+}
+
+.action-btn {
+  background-color: #3c3836;
+  border: 1px solid #504945;
+  border-radius: 8px;
+  padding: 12px 8px;
+  min-width: 75px;
+}
+
+.action-btn:hover {
+  background-color: #504945;
+  border-color: #665c54;
+}
+
+.action-icon {
+  font-size: 22px;
+  color: #ebdbb2;
+}
+
+.action-label {
+  font-size: 9px;
+  color: #a89984;
+}
+
+.power .action-icon { color: #fb4934; }
+.reboot .action-icon { color: #fe8019; }
+.logout .action-icon { color: #fabd2f; }
+.lock .action-icon { color: #fabd2f; }
+.sleep .action-icon { color: #83a598; }
+.terminal .action-icon { color: #b8bb26; }
+.files .action-icon { color: #8ec07c; }
+.settings .action-icon { color: #d3869b; }
+.network .action-icon { color: #83a598; }
+.monitor .action-icon { color: #d3869b; }
+.notif .action-icon { color: #fabd2f; }
+.close .action-icon { color: #fb4934; }
+
+.info-section {
+  background-color: #32302f;
+  border-top: 2px solid #504945;
+  padding: 12px 20px;
+}
+
+.info-icon {
+  font-size: 14px;
+  color: #fabd2f;
+}

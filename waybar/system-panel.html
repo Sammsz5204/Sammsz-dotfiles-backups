@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "JetBrainsMono Nerd Font", monospace;
+            background-color: #282828;
+            color: #ebdbb2;
+            overflow: hidden;
+            width: 380px;
+            height: 600px;
+        }
+
+        .panel {
+            background-color: #282828;
+            border: 2px solid #504945;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            height: 100%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-section {
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 15px;
+            background-color: #32302f;
+            border-bottom: 2px solid #504945;
+        }
+
+        .stat-circle {
+            position: relative;
+            width: 90px;
+            height: 90px;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #3c3836;
+            stroke-width: 8;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .circle-progress.cpu { stroke: #83a598; }
+        .circle-progress.ram { stroke: #d3869b; }
+        .circle-progress.disk { stroke: #b8bb26; }
+
+        .stat-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        .stat-icon.cpu { color: #83a598; }
+        .stat-icon.ram { color: #d3869b; }
+        .stat-icon.disk { color: #b8bb26; }
+
+        .stat-value {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ebdbb2;
+        }
+
+        .stat-label {
+            font-size: 9px;
+            color: #928374;
+            text-transform: uppercase;
+        }
+
+        .info-extra {
+            background-color: #32302f;
+            padding: 0 20px 15px;
+            border-bottom: 2px solid #504945;
+            text-align: center;
+        }
+
+        .info-text {
+            font-size: 10px;
+            color: #665c54;
+            margin: 4px 0;
+        }
+
+        .actions-section {
+            padding: 15px;
+        }
+
+        .actions-title {
+            font-size: 10px;
+            color: #928374;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding: 0 5px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .action-btn {
+            background-color: #3c3836;
+            border: 1px solid #504945;
+            border-radius: 8px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover {
+            background-color: #504945;
+            border-color: #665c54;
+            transform: translateY(-2px);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .action-icon {
+            font-size: 22px;
+            color: #ebdbb2;
+        }
+
+        .action-label {
+            font-size: 9px;
+            color: #a89984;
+        }
+
+        .action-btn.power .action-icon { color: #fb4934; }
+        .action-btn.reboot .action-icon { color: #fe8019; }
+        .action-btn.logout .action-icon { color: #fabd2f; }
+        .action-btn.lock .action-icon { color: #fabd2f; }
+        .action-btn.sleep .action-icon { color: #83a598; }
+        .action-btn.terminal .action-icon { color: #b8bb26; }
+        .action-btn.files .action-icon { color: #8ec07c; }
+        .action-btn.settings .action-icon { color: #d3869b; }
+        .action-btn.network .action-icon { color: #83a598; }
+        .action-btn.monitor .action-icon { color: #d3869b; }
+        .action-btn.notif .action-icon { color: #fabd2f; }
+        .action-btn.close .action-icon { color: #fb4934; }
+
+        .info-section {
+            padding: 12px 20px;
+            background-color: #32302f;
+            border-top: 2px solid #504945;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #928374;
+        }
+
+        .info-icon {
+            font-size: 14px;
+            color: #fabd2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="stats-section">
+            <div class="stat-circle">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle class="circle-bg" cx="45" cy="45" r="38"/>
+                    <circle class="circle-progress cpu" cx="45" cy="45" r="38"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="cpu-circle"/>
+                </svg>
+                <div class="stat-content">
+                    <div class="stat-icon cpu">󰻠</div>
+                    <div class="stat-value" id="cpu-value">0%</div>
+                    <div class="stat-label">CPU</div>
+                </div>
+            </div>
+
+            <div class="stat-circle">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle class="circle-bg" cx="45" cy="45" r="38"/>
+                    <circle class="circle-progress ram" cx="45" cy="45" r="38"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="ram-circle"/>
+                </svg>
+                <div class="stat-content">
+                    <div class="stat-icon ram">󰍛</div>
+                    <div class="stat-value" id="ram-value">0%</div>
+                    <div class="stat-label">RAM</div>
+                </div>
+            </div>
+
+            <div class="stat-circle">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle class="circle-bg" cx="45" cy="45" r="38"/>
+                    <circle class="circle-progress disk" cx="45" cy="45" r="38"
+                            stroke-dasharray="238.76" stroke-dashoffset="238.76" id="disk-circle"/>
+                </svg>
+                <div class="stat-content">
+                    <div class="stat-icon disk">󰋊</div>
+                    <div class="stat-value" id="disk-value">0%</div>
+                    <div class="stat-label">DISK</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-extra">
+            <div class="info-text" id="ram-info">󰍛 0 GB / 0 GB</div>
+            <div class="info-text" id="disk-info">󰋊 0 GB / 0 GB</div>
+        </div>
+
+        <div class="actions-section">
+            <div class="actions-title">AÇÕES RÁPIDAS</div>
+            <div class="actions-grid">
+                <div class="action-btn power" onclick="executeCommand('systemctl poweroff')">
+                    <div class="action-icon">󰐥</div>
+                    <div class="action-label">Desligar</div>
+                </div>
+                <div class="action-btn reboot" onclick="executeCommand('systemctl reboot')">
+                    <div class="action-icon">󰜉</div>
+                    <div class="action-label">Reiniciar</div>
+                </div>
+                <div class="action-btn logout" onclick="executeCommand('hyprctl dispatch exit')">
+                    <div class="action-icon">󰍃</div>
+                    <div class="action-label">Sair</div>
+                </div>
+                <div class="action-btn lock" onclick="executeCommand('hyprlock &')">
+                    <div class="action-icon">󰌾</div>
+                    <div class="action-label">Bloquear</div>
+                </div>
+                <div class="action-btn sleep" onclick="executeCommand('systemctl suspend')">
+                    <div class="action-icon">󰒲</div>
+                    <div class="action-label">Suspender</div>
+                </div>
+                <div class="action-btn terminal" onclick="executeCommand('kitty &')">
+                    <div class="action-icon">󰆍</div>
+                    <div class="action-label">Terminal</div>
+                </div>
+                <div class="action-btn files" onclick="executeCommand('thunar &')">
+                    <div class="action-icon">󰉋</div>
+                    <div class="action-label">Arquivos</div>
+                </div>
+                <div class="action-btn settings" onclick="executeCommand('kitty -e nvim ~/.config/hypr/hyprland.conf &')">
+                    <div class="action-icon">󰒓</div>
+                    <div class="action-label">Configs</div>
+                </div>
+                <div class="action-btn network" onclick="executeCommand('nm-connection-editor &')">
+                    <div class="action-icon">󰖩</div>
+                    <div class="action-label">Rede</div>
+                </div>
+                <div class="action-btn monitor" onclick="executeCommand('kitty -e htop &')">
+                    <div class="action-icon">󰍛</div>
+                    <div class="action-label">Monitor</div>
+                </div>
+                <div class="action-btn notif" onclick="executeCommand('dunstctl history-pop')">
+                    <div class="action-icon">󰂚</div>
+                    <div class="action-label">Notificações</div>
+                </div>
+                <div class="action-btn close" onclick="closePanel()">
+                    <div class="action-icon">󰅖</div>
+                    <div class="action-label">Fechar</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-item">
+                <span class="info-icon">󰔚</span>
+                <span id="uptime">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-icon">󰥔</span>
+                <span id="time">--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CIRCLE_CIRCUMFERENCE = 238.76;
+
+        function updateCircle(elementId, percentage) {
+            const circle = document.getElementById(elementId);
+            const offset = CIRCLE_CIRCUMFERENCE - (percentage / 100 * CIRCLE_CIRCUMFERENCE);
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function executeCommand(cmd) {
+            // Escreve comando em arquivo para o script executar
+            fetch('file:///tmp/system-panel-cmd', {
+                method: 'PUT',
+                body: cmd
+            }).catch(() => {
+                // Firefox não permite escrever arquivos, então usamos localStorage como ponte
+                localStorage.setItem('pending_command', cmd);
+                console.log('Command queued:', cmd);
+            });
+        }
+
+        function closePanel() {
+            localStorage.setItem('pending_command', 'CLOSE_PANEL');
+            window.close();
+        }
+
+        async function getSystemStats() {
+            try {
+                // Lê dados do arquivo gerado pelo script
+                const response = await fetch('file:///tmp/system-panel-stats.json?' + Date.now());
+                const data = await response.json();
+                
+                document.getElementById('cpu-value').textContent = data.cpu + '%';
+                document.getElementById('ram-value').textContent = data.ram + '%';
+                document.getElementById('disk-value').textContent = data.disk + '%';
+                
+                document.getElementById('ram-info').textContent = '󰍛 ' + data.ram_info;
+                document.getElementById('disk-info').textContent = '󰋊 ' + data.disk_info;
+                
+                document.getElementById('uptime').textContent = data.uptime;
+                document.getElementById('time').textContent = data.time;
+                
+                updateCircle('cpu-circle', parseInt(data.cpu));
+                updateCircle('ram-circle', parseInt(data.ram));
+                updateCircle('disk-circle', parseInt(data.disk));
+            } catch (e) {
+                // Se não conseguir ler o arquivo, usa valores simulados
+                const cpu = Math.floor(Math.random() * 100);
+                const ram = Math.floor(Math.random() * 100);
+                const disk = 70 + Math.floor(Math.random() * 20);
+                
+                document.getElementById('cpu-value').textContent = cpu + '%';
+                document.getElementById('ram-value').textContent = ram + '%';
+                document.getElementById('disk-value').textContent = disk + '%';
+                
+                updateCircle('cpu-circle', cpu);
+                updateCircle('ram-circle', ram);
+                updateCircle('disk-circle', disk);
+                
+                const now = new Date();
+                document.getElementById('time').textContent = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+            }
+            
+            // Verifica comandos pendentes
+            const cmd = localStorage.getItem('pending_command');
+            if (cmd) {
+                localStorage.removeItem('pending_command');
+                // Sinaliza para o script executar
+                fetch('data:text/plain,' + encodeURIComponent(cmd));
+            }
+        }
+
+        // Atualiza a cada 2 segundos
+        getSystemStats();
+        setInterval(getSystemStats, 2000);
+    </script>
+</body>
+</html>

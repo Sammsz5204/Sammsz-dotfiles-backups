@@ -1,0 +1,131 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 30,
+  "spacing": 0,
+  "modules-left": ["hyprland/workspaces", "hyprland/window"],
+  "modules-center": ["custom/cava"],
+  "modules-right": [
+    "network",
+    "pulseaudio",
+    "clock",
+    "tray",
+    "custom/system-panel"
+  ],
+
+  "hyprland/workspaces": {
+    "format": "{name}",
+    "on-click": "activate",
+    "format-icons": {
+      "urgent": "",
+      "active": "",
+      "default": ""
+    }
+  },
+
+  "custom/system-panel": {
+    "format": "",
+    "tooltip": true,
+    "tooltip-format": "Sistema: CPU, RAM, Disco",
+    "on-click": "~/.config/waybar/scripts/system-panel-eww.sh"
+  },
+
+  "hyprland/window": {
+    "format": "{}",
+    "max-length": 50,
+    "separate-outputs": true
+  },
+
+  "custom/cava": {
+    "exec": "~/.config/waybar/scripts/cava.sh",
+    "tooltip": false,
+    "format": "{}"
+  },
+
+  "tray": {
+    "icon-size": 16,
+    "spacing": 10
+  },
+
+
+  "clock": {
+    "format": "󰥔 {:%H:%M}",
+    "format-alt": "󰃭 {:%d/%m/%Y}",
+    "tooltip-format": "<tt><small>{calendar}</small></tt>",
+    "calendar": {
+      "mode": "year",
+      "mode-mon-col": 3,
+      "weeks-pos": "right",
+      "on-scroll": 1,
+      "format": {
+        "months": "<span color='#ebdbb2'><b>{}</b></span>",
+        "days": "<span color='#ebdbb2'><b>{}</b></span>",
+        "weeks": "<span color='#d79921'><b>S{}</b></span>",
+        "weekdays": "<span color='#fabd2f'><b>{}</b></span>",
+        "today": "<span color='#fb4934'><b><u>{}</u></b></span>"
+      }
+    }
+  },
+
+  "cpu": {
+    "format": " {usage}%",
+    "tooltip": true,
+    "interval": 2
+  },
+
+  "memory": {
+    "format": " {}%",
+    "tooltip": true,
+    "tooltip-format": "RAM: {used:0.1f}G / {total:0.1f}G"
+  },
+
+  "temperature": {
+    "thermal-zone": 2,
+    "hwmon-path": "/sys/class/hwmon/hwmon2/temp1_input",
+    "critical-threshold": 80,
+    "format-critical": "{icon} {temperatureC}°C",
+    "format": "{icon} {temperatureC}°C",
+    "format-icons": ["", "", ""]
+  },
+
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": " {capacity}%",
+    "format-plugged": " {capacity}%",
+    "format-alt": "{icon} {time}",
+    "format-icons": ["", "", "", "", ""]
+  },
+
+  "network": {
+    "interval": 1,
+    "format-wifi": "󰖩 {bandwidthDownBytes} 󰞒 {bandwidthUpBytes}",
+    "format-ethernet": "󰈀 {bandwidthDownBytes} 󰞒 {bandwidthUpBytes}",
+    "tooltip-format": "{ifname}: {ipaddr}/{cidr}\nESSID: {essid}\nSinal: {signalStrength}%",
+    "format-linked": "󰈀 Sem IP",
+    "format-disconnected": "󰖪 Desconectado",
+    "on-click": "nm-connection-editor"
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰖁  Mudo",
+    "format-icons": {
+      "headphone": "󰋋",
+      "hands-free": "󰋎",
+      "headset": "󰋎",
+      "phone": "󰄜",
+      "portable": "󰄜",
+      "car": "󰄋",
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "on-click": "pavucontrol",
+    "scroll-step": 5
+  }
+}
+
+
+

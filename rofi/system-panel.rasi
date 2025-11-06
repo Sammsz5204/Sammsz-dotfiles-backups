@@ -1,0 +1,74 @@
+* {
+    bg: #282828;
+    bg-alt: #3c3836;
+    fg: #ebdbb2;
+    fg-alt: #a89984;
+    
+    primary: #fabd2f;
+    secondary: #83a598;
+    
+    background-color: transparent;
+    text-color: @fg;
+    font: "JetBrainsMono Nerd Font 11";
+}
+
+window {
+    background-color: @bg;
+    border: 2px;
+    border-color: #504945;
+    border-radius: 12px;
+    padding: 0;
+    width: 480px;
+    
+    location: northeast;
+    anchor: center;
+    x-offset: -15;
+    y-offset: 15;
+}
+
+mainbox {
+    padding: 0;
+    children: [ "message", "listview" ];
+}
+
+message {
+    background-color: @bg-alt;
+    border: 0px 0px 2px 0px;
+    border-color: #504945;
+    padding: 20px;
+}
+
+textbox {
+    text-color: @fg;
+}
+
+listview {
+    padding: 12px;
+    spacing: 8px;
+    scrollbar: false;
+    border: 0px;
+    lines: 6;
+    columns: 2;
+    flow: horizontal;
+}
+
+element {
+    padding: 15px 12px;
+    background-color: @bg-alt;
+    border: 1px;
+    border-color: #504945;
+    border-radius: 8px;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: #504945;
+    border-color: @primary;
+    border: 2px;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font: "JetBrainsMono Nerd Font 11";
+}
