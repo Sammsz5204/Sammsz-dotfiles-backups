@@ -1,119 +1,350 @@
+/* ======================================================== */
+/* Gruvbox Dark (Hard) colors */
+/* ======================================================== */
+@define-color bg        #1d2021;
+@define-color fg        #ebdbb2;
+@define-color muted     #928374;
+
+@define-color red       #cc241d;
+@define-color orange    #d65d0e;
+@define-color yellow    #d79921;
+@define-color green     #98971a;
+@define-color aqua      #689d6a;
+@define-color blue      #458588;
+@define-color purple    #b16286;
+
+@define-color bright_red    #fb4934;
+@define-color bright_green  #b8bb26;
+@define-color bright_yellow #fabd2f;
+@define-color bright_aqua   #8ec07c;
+@define-color bright_blue   #83a598;
+@define-color bright_purple #d3869b;
+
+/* ======================================================== */
+/* BASE RESET */
+/* ======================================================== */
 * {
-  border: none;
-  border-radius: 0;
-  font-family: "JetBrainsMono Nerd Font", "Font Awesome 6 Free", monospace;
-  font-size: 13px;
+  padding: 0;
+  margin: 0;
   min-height: 0;
+  border-radius: 0px;
+  border: none;
+  text-shadow: none;
+  transition: none;
+  box-shadow: none;
 }
 
 window#waybar {
-  background-color: #282828;
-  color: #ebdbb2;
-  transition-property: background-color;
-  transition-duration: 0.5s;
+  background: @bg;
+  padding: 3px 0;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-weight: bold;
+  font-size: 14px;
 }
 
 window#waybar.hidden {
-  opacity: 0.2;
+  opacity: 0.98;
 }
 
-#workspaces button {
-  padding: 0 8px;
-  background-color: transparent;
-  color: #a89984;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s ease;
-}
-
-#workspaces button:hover {
-  background-color: rgba(235, 219, 178, 0.1);
-  color: #ebdbb2;
-}
-
-#workspaces button.active {
-  color: #fabd2f;
-  border-bottom: 3px solid #fabd2f;
-}
-
-#workspaces button.urgent {
-  background-color: #fb4934;
-  color: #282828;
-}
-
-#window {
-  padding: 0 15px;
-  color: #ebdbb2;
-  font-weight: normal;
-}
-
-#custom-cava {
-  padding: 0 20px;
-  color: #b8bb26;
-  font-family: monospace;
-  font-size: 11px;
-  min-width: 300px;
-}
-
-#clock,
+/* ======================================================== */
+/* COMMON MODULE STYLE */
+/* ======================================================== */
+#window,
+#custom-updates,
+#tray,
 #network,
-#pulseaudio,
-#tray {
-  padding: 0 12px;
-  color: #ebdbb2;
-  border-left: 1px solid #3c3836;
+#wireplumber,
+#battery,
+#backlight,
+#clock,
+#memory,
+#cpu,
+#custom-launcher,
+#custom-bluetooth,
+#idle_inhibitor,
+#custom-mpris-prev,
+#custom-mpris-next,
+#custom-modes,
+#mpris {
+  color: @fg;
+  margin: 2px 6px;
+  padding: 3px 7px;
+  border-bottom: 2px solid @muted;
 }
 
-#clock {
-  color: #83a598;
-  font-weight: bold;
+/* ======================================================== */
+/* Power Profiles Daemon */
+/* ======================================================== */
+#power-profiles-daemon {
+  font-size: 14px;
+  padding: 3px 7px;
+  margin: 2px 6px;
+  border-bottom: 2px solid @muted;
+  color: @fg;
+}
+#power-profiles-daemon.performance {
+  color: @red;
+  border-bottom-color: @red;
+}
+#power-profiles-daemon.balanced {
+  color: @green;
+  border-bottom-color: @green;
+}
+#power-profiles-daemon.power-saver {
+  color: @blue;
+  border-bottom-color: @blue;
 }
 
+
+/* ======================================================== */
+/* Idle Inhibitor */
+/* ======================================================== */
+#idle_inhibitor {
+  color: @yellow;
+  border-bottom-color: @yellow;
+}
+#idle_inhibitor.activated {
+  color: @green;
+  border-bottom-color: @green;
+}
+#idle_inhibitor.deactivated {
+  color: @red;
+  border-bottom-color: @red;
+}
+
+/* ======================================================== */
+/* CPU */
+/* ======================================================== */
+#cpu {
+  color: @green;
+  border-bottom-color: @green;
+}
+#cpu.warning {
+  color: @yellow;
+  border-bottom-color: @yellow;
+}
+#cpu.critical {
+  color: @red;
+  border-bottom-color: @red;
+}
+
+/* ======================================================== */
+/* Memory */
+/* ======================================================== */
+#memory {
+  color: @aqua;
+  border-bottom-color: @aqua;
+}
+#memory.warning {
+  color: @orange;
+  border-bottom-color: @orange;
+}
+#memory.critical {
+  color: @red;
+  border-bottom-color: @red;
+}
+
+/* ======================================================== */
+/* Battery */
+/* ======================================================== */
+#battery {
+  color: @bright_green;
+  border-bottom-color: @bright_green;
+}
+#battery.charging,
+#battery.plugged {
+  color: @green;
+  border-bottom-color: @green;
+}
+#battery.warning:not(.charging) {
+  color: @yellow;
+  border-bottom-color: @yellow;
+}
+#battery.critical:not(.charging) {
+  color: @red;
+  border-bottom-color: @red;
+}
+
+/* ======================================================== */
+/* custom-swaync */
+/* ======================================================== */
+#custom-swaync {
+  font-size: 12px;
+  color: @red;
+  border-bottom: 2px solid @red;
+  padding: 3px 7px;
+  margin: 2px 6px;
+}
+
+/* ======================================================== */
+/* custom-cava */
+/* ======================================================== */
+#custom-cava {
+  font-size: 12px;
+  padding: 0 8px;
+  letter-spacing: 1px;
+  color: @green;
+  border-bottom: 2px solid @green;
+  margin: 2px 0;
+}
+
+/* ======================================================== */
+/* Workspaces */
+/* ======================================================== */
+#workspaces {
+  color: @bg;
+  border-bottom: 2px solid @green;
+  margin: 2px;
+}
+#workspaces button {
+  color: @fg;
+  margin: 3px 1px;
+  min-width: 20px;
+  padding: 0 2px;
+}
+#workspaces button:hover {
+  background: @bright_green;
+}
+#workspaces button.active {
+  background: @green;
+  color: @bg;
+}
+#workspaces button.urgent {
+  background: @bright_red;
+}
+
+/* ======================================================== */
+/* Window title */
+/* ======================================================== */
+#window {
+  color: @bg;
+  background: @bright_purple;
+  border-bottom-color: @blue;
+  margin: 2px 6px;
+  padding: 3px 7px;
+}
+window#waybar.empty #window {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: transparent;
+  border-bottom: none;
+}
+
+/* ======================================================== */
+/* Network */
+/* ======================================================== */
 #network {
-  color: #83a598;
+  color: @orange;
+  border-bottom-color: @orange;
 }
-
 #network.disconnected {
-  color: #fb4934;
+  color: @red;
+  border-bottom-color: @red;
 }
 
-#pulseaudio {
-  color: #fabd2f;
+/* ======================================================== */
+/* Audio */
+/* ======================================================== */
+#wireplumber {
+  color: @aqua;
+  border-bottom-color: @aqua;
+}
+#wireplumber.muted {
+  color: @bright_red;
+  border-bottom-color: @bright_red;
 }
 
-#pulseaudio.muted {
-  color: #928374;
+/* ======================================================== */
+/* Backlight */
+/* ======================================================== */
+#backlight {
+  color: @bright_yellow;
+  border-bottom-color: @bright_yellow;
 }
 
+/* ======================================================== */
+/* Clock */
+/* ======================================================== */
+#clock {
+  color: @bright_aqua;
+  border-bottom-color: @bright_aqua;
+}
+
+/* ======================================================== */
+/* Tray */
+/* ======================================================== */
 #tray {
-  padding: 0 10px;
+  padding: 3px 7px;
+  margin: 0 6px;
+  border-bottom-color: @fg;
 }
 
-#tray > .passive {
-  -gtk-icon-effect: dim;
+/* ======================================================== */
+/* Launcher */
+/* ======================================================== */
+#custom-launcher {
+  color: @bright_blue;
+  font-size: 12px;
+  margin: 0 6px;
+  border-bottom-color: @bright_blue;
 }
 
-#tray > .needs-attention {
-  -gtk-icon-effect: highlight;
-  background-color: #fb4934;
+/* ======================================================== */
+/* Bluetooth */
+/* ======================================================== */
+#custom-bluetooth {
+  color: @blue;
+  border-bottom-color: @blue;
 }
 
-tooltip {
-  background: #282828;
-  border: 1px solid #504945;
-  border-radius: 5px;
+/* ======================================================== */
+/* MPRIS controls */
+/* ======================================================== */
+#mpris {
+  color: @aqua;
+  border-bottom-color: @aqua;
+}
+#mpris:hover {
+  color: @bright_green;
+  border-bottom-color: @bright_green;
+}
+#custom-mpris-prev,
+#custom-mpris-next {
+  color: @aqua;
+  border-bottom-color: @aqua;
+}
+#custom-mpris-prev:hover,
+#custom-mpris-next:hover {
+  color: @bright_green;
+  border-bottom-color: @bright_green;
 }
 
-tooltip label {
-  color: #ebdbb2;
+/* ======================================================== */
+/* Taskbar */
+/* ======================================================== */
+#taskbar {
+  background: transparent;
+  padding: 0;
+  margin: 0 6px;
+  border-bottom: none;
 }
-#custom-system-panel {
-  padding: 0 12px;
-  color: #d3869b;
-  border-left: 1px solid #3c3836;
-  transition: all 0.3s ease;
+#taskbar button {
+  background: transparent;
+  border: none;
+  margin: 2px 1px;
+  padding: 2px;
+  color: @fg;
+  border-bottom: 2px solid @muted;
+  min-width: 14px;
+}
+#taskbar button.active {
+  border-bottom-color: @green;
+}
+#taskbar button:hover {
+  border-bottom-color: @bright_green;
+}
+#taskbar button.urgent {
+  border-bottom-color: @bright_red;
 }
 
-#custom-system-panel:hover {
-  background-color: rgba(211, 134, 155, 0.1);
-  color: #fabd2f;
-}

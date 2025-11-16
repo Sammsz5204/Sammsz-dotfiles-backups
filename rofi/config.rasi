@@ -1,2 +1,11 @@
+configuration {
+    display-ssh:    "";
+    display-run:    "";
+    display-drun:   "";
+    display-window: "";
+    display-combi:  "";
+    show-icons:     true;
+}
 
-@theme "/usr/share/rofi/themes/gruvbox-dark-soft.rasi"
+@theme "~/.config/rofi/gruvbox-material.rasi"
+
