@@ -54,18 +54,12 @@ def processar_diretorio(dir_entrada, dir_saida, fator_escurecimento=0.5):
 
 # Exemplo de uso
 if __name__ == "__main__":
-    # Configure aqui os diretórios
+    # Aqui os diretórios
     DIRETORIO_ENTRADA = "./imagens_originais"
     DIRETORIO_SAIDA = "./imagens_escuras"
     
-    # Fator de escurecimento (0.0 = totalmente preto, 1.0 = original)
-    # 0.5 = 50% mais escuro, 0.3 = 70% mais escuro
+    # Fator de pretidaoKKKKKKKJ
     FATOR = 0.5
     
     # Processa todas as imagens do diretório
     processar_diretorio(DIRETORIO_ENTRADA, DIRETORIO_SAIDA, FATOR)
-    
-    # Ou processa apenas uma imagem específica:
-    # escurecer_imagem("./imagens_originais/foto.jpg", 
-    #                  "./imagens_escuras/foto.jpg", 
-    #                  fator_escurecimento=0.5)
