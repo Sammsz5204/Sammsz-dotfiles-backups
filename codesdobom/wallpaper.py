@@ -1,16 +1,5 @@
-
-
 escurecer_imagem("/home/sam/.Wallpapers/wallhaven.jpg", "/home/sam/.config/hypr/wall.jpg", 0.5)
-    Escurece uma imagem e salva em outro diretório.
-    
-    Parâmetros:
-    - caminho_entrada: caminho completo da imagem original
-    - caminho_saida: caminho completo para salvar a imagem escurecida
-    - fator_escurecimento: valor entre 0 (totalmente escuro) e 1 (original)
-                           Padrão: 0.5 (50% mais escuro)
-    - nome_customizado: nome específico para a imagem final (ex: "foto_escura.jpg")
-                        Se None, usa o nome original
-    """
+
     try:
         # Abre a imagem
         img = Image.open(caminho_entrada)
