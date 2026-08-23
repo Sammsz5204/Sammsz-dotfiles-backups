@@ -57,6 +57,13 @@ PanelWindow {
                 id: blob
                 anchors.fill: parent
 
+                // mesma correcao de serrilhado do LockSurface.qml — ver
+                // comentario la' pra explicacao completa
+                antialiasing: true
+                smooth: true
+                renderTarget: Canvas.FramebufferObject
+                renderStrategy: Canvas.Cooperative
+
                 property real lobes: 8
                 property real amplitude: 0.15
 

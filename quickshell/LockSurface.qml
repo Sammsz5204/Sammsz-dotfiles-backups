@@ -87,6 +87,103 @@ Rectangle {
         function onUnlocked() { exitAnim.start() }
     }
 
+    // ---------------- dot de senha (usado pelo dotsRow mais abaixo) ----
+    // Nasce como poligono aleatorio de 3-5 lados (spring, overshoot),
+    // segura um instante, morfa suave pra circulo perfeito enquanto
+    // encolhe pro tamanho final. No backspace faz o inverso: ganha
+    // lobulos de volta (distorce) e desvanece encolhendo ate sumir —
+    // so' ai' o ListView pode destruir o item de verdade (delayRemove).
+    Component {
+        id: passwordDotComponent
+
+        Item {
+            id: dotItem
+            implicitWidth: 20
+            implicitHeight: 20
+
+            Canvas {
+                id: dotShape
+                anchors.centerIn: parent
+                width: 17
+                height: 17
+                scale: 0
+                opacity: 0
+
+                property real lobes: 4
+                property real amplitude: 0.4
+
+                onLobesChanged: requestPaint()
+                onAmplitudeChanged: requestPaint()
+
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    const cx = width / 2, cy = height / 2;
+                    const baseR = Math.min(width, height) / 2 - 1;
+                    const steps = 1024;
+                    ctx.beginPath();
+                    for (let i = 0; i <= steps; i++) {
+                        const t = (i / steps) * Math.PI * 2;
+                        const r = baseR * (1 + amplitude * Math.cos(lobes * t));
+                        const x = cx + r * Math.cos(t);
+                        const y = cy + r * Math.sin(t);
+                        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = Colors.fg;
+                    ctx.fill();
+                }
+            }
+
+            ListView.onAdd: {
+                const randomShapes = [
+                    { lobes: 3, amp: 0.20 },
+                    { lobes: 4, amp: 0.15 },
+                    { lobes: 5, amp: 0.20 },
+                ];
+                const pick = randomShapes[Math.floor(Math.random() * randomShapes.length)];
+                dotShape.lobes = pick.lobes;
+                dotShape.amplitude = pick.amp;
+                popInAnim.start();
+            }
+
+            ListView.onRemove: {
+                dotItem.ListView.delayRemove = true;
+                removeAnim.start();
+            }
+
+            // nasce grande/distorcido (spring) e assenta em circulo pequeno
+            SequentialAnimation {
+                id: popInAnim
+                ParallelAnimation {
+                    NumberAnimation { target: dotShape; property: "scale"; from: 0; to: 1.5; duration: 200; easing.type: Easing.OutBack; easing.overshoot: 1.8 }
+                    NumberAnimation { target: dotShape; property: "opacity"; from: 0; to: 1; duration: 120 }
+                }
+                PauseAnimation { duration: 80 }
+                ParallelAnimation {
+                    NumberAnimation { target: dotShape; property: "lobes"; to: 0; duration: 240; easing.type: Easing.InOutCubic }
+                    NumberAnimation { target: dotShape; property: "amplitude"; to: 0; duration: 240; easing.type: Easing.InOutCubic }
+                    NumberAnimation { target: dotShape; property: "scale"; to: 1; duration: 240; easing.type: Easing.OutCubic }
+                }
+            }
+
+            // inverso: ganha lobulos de novo (distorce) e desmancha
+            SequentialAnimation {
+                id: removeAnim
+                ParallelAnimation {
+                    NumberAnimation { target: dotShape; property: "lobes"; to: 4; duration: 120; easing.type: Easing.InOutCubic }
+                    NumberAnimation { target: dotShape; property: "amplitude"; to: 0.4; duration: 120; easing.type: Easing.InOutCubic }
+                    NumberAnimation { target: dotShape; property: "scale"; to: 1.4; duration: 120; easing.type: Easing.OutCubic }
+                }
+                ParallelAnimation {
+                    NumberAnimation { target: dotShape; property: "opacity"; to: 0; duration: 150 }
+                    NumberAnimation { target: dotShape; property: "scale"; to: 0; duration: 150; easing.type: Easing.InCubic }
+                }
+                PropertyAction { target: dotItem; property: "ListView.delayRemove"; value: false }
+            }
+        }
+    }
+
     Image {
         id: bgReal
         anchors.fill: parent
@@ -302,22 +399,55 @@ Rectangle {
                     color: Colors.muted
                 }
 
-                // Mascara a senha com bolinhas em vez de mostrar o TextInput cru
-                Text {
+                // Cada caractere digitado vira um "dot" que nasce como
+                // poligono aleatorio (3-5 lados, mesma matematica cos-lobulo
+                // do avatar) e morfa pra um circulo — igual o Caelestia faz,
+                // so' que ao inves de trocar a forma instantaneamente no
+                // meio da animacao (o truque real deles: PropertyAction sem
+                // transicao, disfarcado pelo scale mudando ao mesmo tempo),
+                // deixei o morph em si suave tambem, porque o Canvas ja
+                // supporta isso nativamente sem custo extra.
+                Item {
                     Layout.fillWidth: true
-                    text: "●".repeat(root.context.currentText.length)
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
-                    font.letterSpacing: 3
-                    color: Colors.fg
-                    elide: Text.ElideLeft
+                    implicitHeight: 20
 
                     Text {
+                        anchors.verticalCenter: parent.verticalCenter
                         visible: root.context.currentText.length === 0
                         text: "Digite sua senha"
                         font.family: "JetBrainsMono Nerd Font"
                         font.pixelSize: 14
                         color: Colors.muted
+                    }
+
+                    ListView {
+                        id: dotsRow
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.right: parent.right
+                        width: Math.min(contentWidth, parent.width)
+                        height: 20
+                        orientation: ListView.Horizontal
+                        interactive: false
+                        spacing: 8
+                        layoutDirection: Qt.RightToLeft
+
+                        model: ListModel { id: dotsModel }
+                        delegate: passwordDotComponent
+
+                        // Precisa existir pro "ListView.delayRemove" do
+                        // delegate ter efeito — o trabalho de verdade
+                        // roda dentro do delegate (ListView.onRemove),
+                        // essa transicao fica so' como "ativador".
+                        remove: Transition {}
+                    }
+
+                    Connections {
+                        target: root.context
+                        function onCurrentTextChanged() {
+                            const len = root.context.currentText.length;
+                            while (dotsModel.count < len) dotsModel.append({});
+                            while (dotsModel.count > len) dotsModel.remove(dotsModel.count - 1);
+                        }
                     }
                 }
 
