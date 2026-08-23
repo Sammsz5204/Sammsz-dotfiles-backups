@@ -180,7 +180,7 @@ Rectangle {
                 SequentialAnimation {
                     id: burstAnim
                     NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 880; easing.type: Easing.OutCubic }
-                    NumberAnimation { target: blob; property: "burstRot"; to: 60; duration: 520; easing.type: Easing.InOutCubic }
+                    NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 520; easing.type: Easing.InOutCubic }
                 }
                 
 
@@ -201,8 +201,8 @@ Rectangle {
                     property real lobes: 8
                     property real amplitude: 0.15
 
-                    Behavior on lobes { NumberAnimation { duration: 95; easing.type: Easing.InOutCubic } }
-                    Behavior on amplitude { NumberAnimation { duration: 95; easing.type: Easing.InOutCubic } }
+                    Behavior on lobes { NumberAnimation { duration: 55; easing.type: Easing.InOutCubic } }
+                    Behavior on amplitude { NumberAnimation { duration: 55; easing.type: Easing.InOutCubic } }
 
                 
 
@@ -241,7 +241,7 @@ Rectangle {
                 NumberAnimation on creepRot {
                     from: 0
                     to: 360
-                    duration: root.context.unlockInProgress ? 900 : 1500
+                    duration: root.context.unlockInProgress ? 700 : 1400
                     loops: Animation.Infinite
                     running: true
                 }
@@ -252,7 +252,7 @@ Rectangle {
             // ciclo de formas: troca o preset-alvo, o Behavior acima
             // cuida da transicao suave entre um e outro
             Timer {
-                interval: root.context.unlockInProgress ? 700 : 900
+                interval: root.context.unlockInProgress ? 800 : 1100
                 running: true
                 repeat: true
 

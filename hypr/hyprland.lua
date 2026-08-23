@@ -247,7 +247,8 @@ hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit")) -- dwindle only
 
 -- Quickshell
 
-hl.bind(mainMod .. " + SHIFT + K", hl.dsp.exec_cmd("killall quickshell"))
+hl.bind(mainMod .. " + SHIFT + K", hl.dsp.exec_cmd("killall qs"))
+hl.bind(mainMod .. " + SHIFT + Q", hl.dsp.exec_cmd("qs"))
 
 -- Hyprlock
 

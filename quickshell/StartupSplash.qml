@@ -41,7 +41,7 @@ PanelWindow {
             SequentialAnimation {
                 id: burstAnim
                 NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 680; easing.type: Easing.OutCubic }
-                NumberAnimation { target: blob; property: "burstRot"; to: 60; duration: 480; easing.type: Easing.InOutCubic }
+                NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 480; easing.type: Easing.InOutCubic }
             }
 
             Rectangle {
@@ -60,8 +60,8 @@ PanelWindow {
                 property real lobes: 8
                 property real amplitude: 0.15
 
-                Behavior on lobes { NumberAnimation { duration: 30; easing.type: Easing.InOutCubic } }
-                Behavior on amplitude { NumberAnimation { duration: 30; easing.type: Easing.InOutCubic } }
+                Behavior on lobes { NumberAnimation { duration: 50; easing.type: Easing.InOutCubic } }
+                Behavior on amplitude { NumberAnimation { duration: 50; easing.type: Easing.InOutCubic } }
 
                 onLobesChanged: requestPaint()
                 onAmplitudeChanged: requestPaint()
@@ -100,7 +100,7 @@ PanelWindow {
             }
 
             Timer {
-                interval: 680
+                interval: 780
                 running: true
                 repeat: true
                 property int idx: 0
