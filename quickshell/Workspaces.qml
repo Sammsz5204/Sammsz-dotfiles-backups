@@ -39,7 +39,7 @@ RowLayout {
             scale: entered ? 1 : 0.45
 
             Behavior on radius {
-                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
             }
 
             Behavior on color {
@@ -71,7 +71,7 @@ RowLayout {
                 NumberAnimation {
                     target: wsBtn
                     property: "scale"
-                    from: 0.65
+                    from: 0.75
                     to: 1
                     duration: 420
                     easing.type: Easing.OutBack
@@ -94,7 +94,7 @@ RowLayout {
                     target: wsBtn
                     property: "scale"
                     to: 1.03
-                    duration: 160
+                    duration: 100
                     easing.type: Easing.OutBack
                     easing.overshoot: 0.5
                 }
@@ -103,7 +103,7 @@ RowLayout {
                     target: wsBtn
                     property: "scale"
                     to: 1
-                    duration: 220
+                    duration: 170
                     easing.type: Easing.OutCubic
                 }
             }

@@ -25,20 +25,43 @@ Scope {
     // chamado via IPC (bind do hyprland.lua) ou "qs -c quickshell ipc
     // call lock lock" na mao. Nao troca a hyprlock ainda — os dois
     // ficam disponiveis em paralelo ate isso rodar estavel por um tempo.
+    //
+    // Quem solta o lock de verdade e' o LockSurface, via closed() —
+    // so' depois de tocar a animacao de saida. lockContext.unlocked
+    // so' avisa "senha certa", nao desmonta nada sozinho.
     // ============================================================
     LockContext {
         id: lockContext
-        onUnlocked: lock.locked = false
+        
+        // Twin js add this property to hold the screenshot path
+        property string bgSource: ""
+    }
+
+    // Process to silently take the screenshot using grim
+    Process {
+        id: grimProc
+        command: ["grim", "/tmp/qs_lock_bg.png"]
+        
+        onExited: {
+            // Update the image source and bust the cache so Qt reloads it
+            lockContext.bgSource = "file:///tmp/qs_lock_bg.png?v=" + Date.now();
+            // ONLY lock the screen after the screenshot is successfully saved
+            lock.locked = true;
+        }
     }
 
     WlSessionLock {
         id: lock
         locked: false
-
+        
         WlSessionLockSurface {
+            color: "transparent"
+
             LockSurface {
+                color: "transparent"
                 anchors.fill: parent
                 context: lockContext
+                onClosed: lock.locked = false
             }
         }
     }
@@ -49,7 +72,8 @@ Scope {
         function engage(): void {
             lockContext.currentText = "";
             lockContext.showFailure = false;
-            lock.locked = true;
+            // Run grim instead of locking right away
+            grimProc.running = true;
         }
 
         function disengage(): void {

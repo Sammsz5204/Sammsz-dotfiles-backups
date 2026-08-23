@@ -98,8 +98,8 @@ Item {
     SequentialAnimation {
         id: squishAnimation
         NumberAnimation { target: root; property: "scale"; to: 0.95; duration: 100; easing.type: Easing.OutCubic }
-        NumberAnimation { target: root; property: "scale"; to: 1.03; duration: 160; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
-        NumberAnimation { target: root; property: "scale"; to: 1; duration: 220; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "scale"; to: 1.03; duration: 100; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
+        NumberAnimation { target: root; property: "scale"; to: 1; duration: 170; easing.type: Easing.OutCubic }
     }
 
     onPressTokenChanged: squishAnimation.restart()

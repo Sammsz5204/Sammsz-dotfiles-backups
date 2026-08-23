@@ -91,7 +91,7 @@ Item {
     }
 
     Timer {
-        interval: 1
+        interval: 500
         running: true
         repeat: true
         triggeredOnStart: true

@@ -1,27 +1,32 @@
 // ============================================================
-// LockSurface.qml — o visual. Inspirado no layout do Caelestia
-// (relogio grande de 2 tons, data, avatar circular, campo de senha
-// em pilula, mensagem de estado) mas desenhado do zero com os
-// componentes que voce ja tem — nao copiei codigo do Caelestia aqui,
-// so a ideia de layout, porque o dele depende de modulos (M3Shapes,
-// MaterialIcon, etc) que nao existem fora do shell dele.
+// LockSurface.qml
+// (relogio grande de 2 tons, data, campo de senha
+// em pilula, mensagem de estado)
 // ============================================================
 pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
+import QtQuick.Effects
+
 
 Rectangle {
     id: root
-
+    
+	
     required property LockContext context
+    signal closed()
 
-    color: Colors.bg
+    
 
     // Foco garantido mesmo se o mouse nao passar por cima primeiro
     focus: true
-    Component.onCompleted: forceActiveFocus()
+    Component.onCompleted: {
+        forceActiveFocus();
+        enterAnim.start();
+    }
 
     // Recaptura o foco caso alguma outra janela roube (bug comum
     // de foco em compositores wlroots com telas de lock)
@@ -43,6 +48,8 @@ Rectangle {
             context.currentText += event.text;
         }
     }
+    
+
 
     // Leve "shake" quando a senha erra — feedback sem precisar de texto
     SequentialAnimation {
@@ -53,9 +60,48 @@ Rectangle {
         NumberAnimation { target: centerColumn; property: "x"; to: centerColumn.baseX - 6; duration: 60 }
         NumberAnimation { target: centerColumn; property: "x"; to: centerColumn.baseX; duration: 60 }
     }
+
+    // Entrada: conteudo nasce um pouco menor/transparente e "assenta".
+    ParallelAnimation {
+        id: enterAnim
+        NumberAnimation { target: centerColumn; property: "opacity"; from: 0; to: 1; duration: 280; easing.type: Easing.OutCubic }
+        NumberAnimation { target: centerColumn; property: "scale"; from: 0.92; to: 1; duration: 280; easing.type: Easing.OutCubic }
+    }
+
+    // Saida: toca DEPOIS que a senha ja foi validada com sucesso, e so'
+    // entao avisa o shell.qml (via closed()) que pode soltar o lock de
+    // verdade — sem isso, o unlock instantaneo nao deixa tempo nenhum
+    // pra qualquer animacao aparecer.
+    SequentialAnimation {
+        id: exitAnim
+        ParallelAnimation {
+            NumberAnimation { target: centerColumn; property: "opacity"; to: 0; duration: 400; easing.type: Easing.InCubic }
+            NumberAnimation { target: centerColumn; property: "scale"; to: 0.92; duration: 500; easing.type: Easing.InCubic }
+        }
+        ScriptAction { script: root.closed() }
+    }
+
     Connections {
         target: root.context
         function onFailed() { shake.start() }
+        function onUnlocked() { exitAnim.start() }
+    }
+
+    Image {
+        id: bgReal
+        anchors.fill: parent
+        source: root.context.bgSource
+        visible: false 
+        fillMode: Image.PreserveAspectCrop
+    }
+
+    // 2. Apply the heavy blur effect
+    MultiEffect {
+        anchors.fill: bgReal
+        source: bgReal
+        blurEnabled: true
+        blur: 1.0       // Intensity (0.0 to 1.0)
+        blurMax: 48     // Adjust radius (higher = softer blur, max is usually 64)
     }
 
     ColumnLayout {
@@ -66,6 +112,9 @@ Rectangle {
         y: (root.height - height) / 2
         width: 360
         spacing: 28
+        opacity: 0
+        scale: 0.92
+        transformOrigin: Item.Center
 
         // ---------------- relogio ----------------
         ColumnLayout {
@@ -107,22 +156,103 @@ Rectangle {
             precision: SystemClock.Minutes
         }
 
-        // ---------------- avatar (placeholder circular) ----------------
-        Rectangle {
-            Layout.alignment: Qt.AlignHCenter
-            width: 72
-            height: 72
-            radius: 36
-            color: Colors.surface
-            border.color: Colors.accent
-            border.width: 2
 
-            Text {
-                anchors.centerIn: parent
-                text: "󰀄"
-                font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 32
-                color: Colors.accent
+        ColumnLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 8
+
+            Item {
+            	id: morphingIcon
+                Layout.alignment: Qt.AlignHCenter
+                width: 30
+                height: 30
+                
+                SequentialAnimation {
+                    id: bumpAnim
+        		        NumberAnimation { target: blob; property: "scale"; to: 1.14; duration: 150; easing.type: Easing.OutCubic }
+        		        NumberAnimation { target: blob; property: "scale"; to: 1; duration: 150; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
+                  } 
+                
+
+                // halo suave atras, fixo (nao morfa)
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 40
+                    height: 40
+                    radius: 20
+                    color: Colors.accent
+                    opacity: 0.15
+                }
+
+                Canvas {
+                    id: blob
+                    anchors.fill: parent
+
+                    property real lobes: 8
+                    property real amplitude: 0.15
+
+                    Behavior on lobes { NumberAnimation { duration: 95; easing.type: Easing.InOutCubic } }
+                    Behavior on amplitude { NumberAnimation { duration: 95; easing.type: Easing.InOutCubic } }
+
+                
+
+                    onLobesChanged: requestPaint()
+                    onAmplitudeChanged: requestPaint()
+                    Component.onCompleted: requestPaint()
+
+                    onPaint: {
+                        const ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        const cx = width / 2, cy = height / 2;
+                        const baseR = Math.min(width, height) / 2 - 4;
+                        const steps = 256;
+                        ctx.beginPath();
+                        for (let i = 0; i <= steps; i++) {
+                            const t = (i / steps) * Math.PI * 2;
+                            const r = baseR * (1 + amplitude * Math.cos(lobes * t));
+                            const x = cx + r * Math.cos(t);
+                            const y = cy + r * Math.sin(t);
+                            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                        ctx.fillStyle = Colors.accent;
+                        ctx.fill();
+                    }
+
+                    RotationAnimation on rotation {
+                        from: 0
+                        to: 360
+                        duration: root.context.unlockInProgress ? 900 : 1700
+                        loops: Animation.Infinite
+                        running: true
+                    }
+                }
+            }
+
+
+            // ciclo de formas: troca o preset-alvo, o Behavior acima
+            // cuida da transicao suave entre um e outro
+            Timer {
+                interval: root.context.unlockInProgress ? 700 : 900
+                running: true
+                repeat: true
+
+                property int idx: 0
+                readonly property var presets: [
+                    { lobes: 9,  amp: 0.04 },
+                    { lobes: 10,  amp: 0.15 },
+                    { lobes: 5,  amp: 0.05 },
+                    { lobes: 2,  amp: 0.21 },
+                    { lobes: 8, amp: 0.14 },
+                    { lobes: 4, amp : 0.2}
+                ]
+
+                onTriggered: {
+                    idx = (idx + 1) % presets.length;
+                    blob.lobes = presets[idx].lobes;
+                    blob.amplitude = presets[idx].amp;
+                    bumpAnim.start();
+                }
             }
         }
 
@@ -135,7 +265,7 @@ Rectangle {
             radius: height / 2
             color: Colors.surface
             border.width: 2
-            border.color: root.context.showFailure ? Colors.red : (root.activeFocus ? Colors.accent : "transparent")
+            border.color: root.context.showFailure ? Colors.red : (root.activeFocus ? Colors.muted : "transparent")
 
             Behavior on border.color { ColorAnimation { duration: 150 } }
 
@@ -177,7 +307,7 @@ Rectangle {
                     implicitHeight: 36
                     implicitWidth: root.context.currentText.length > 0 ? 36 : 0
                     radius: 18
-                    color: sendMouse.pressed ? Colors.accent : Colors.bg
+                    color: sendMouse.pressed ? Colors.accent : Colors.accent
                     opacity: root.context.currentText.length > 0 ? 1 : 0
                     clip: true
 
