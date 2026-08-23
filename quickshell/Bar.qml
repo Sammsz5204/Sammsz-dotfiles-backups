@@ -31,6 +31,12 @@ PanelWindow {
 
     WlrLayershell.keyboardFocus: launcherPanel.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
+    // Startup animation handler
+    StartupSplash {
+        screenTarget: bar.modelData
+        onFinished: barEnterAnim.start()
+    }
+
 // --- NOSSO TRUQUE DE IPC INFALÍVEL ---
     // Ele fica escutando o arquivo sem gastar processamento. 
     // Quando recebe um sinal, abre o Launcher e já volta a escutar.
@@ -61,6 +67,16 @@ PanelWindow {
         color: Colors.bg
         radius: 19
 
+        // Hidden initially until splash finishes
+        opacity: 0
+        transform: Translate { id: barTrans; y: -30 }
+
+        ParallelAnimation {
+            id: barEnterAnim
+            NumberAnimation { target: background; property: "opacity"; to: 1; duration: 320; easing.type: Easing.OutCubic }
+            NumberAnimation { target: barTrans; property: "y"; to: 0; duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+        }
+
         RowLayout {
             id: leftLayout
 
@@ -73,12 +89,12 @@ PanelWindow {
             spacing: 6
 
             MorphingButton {
-    		      Layout.alignment: Qt.AlignVCenter
-    		      icon: ""
-    		      text: "Apps"
+                  Layout.alignment: Qt.AlignVCenter
+                  icon: ""
+                  text: "Apps"
     
-    		      onClicked: launcherPanel.visible = !launcherPanel.visible
-	          }
+                  onClicked: launcherPanel.visible = !launcherPanel.visible
+              }
 
             IdleInhibitor {
             }
@@ -131,15 +147,15 @@ PanelWindow {
                     "bash",
                     "-c",
                     "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1 | cut -d'.' -f1"
-                ] //[cite: 5]
-                suffix: "%" //[cite: 5]
-                intervalMs: 2000 //[cite: 5]
+                ] 
+                suffix: "%" 
+                intervalMs: 2000 
 
                 onClicked: Quickshell.execDetached([
                     "kitty",
                     "-e",
                     "btop --force-utf"
-                ]) //[cite: 5]
+                ]) 
             }
 
             MorphingStat {
@@ -150,8 +166,8 @@ PanelWindow {
                     "bash",
                     "-c",
                     "free -b | awk '/Mem:/ {printf \"%.1fG/%.1fG\", $3/1073741824, $2/1073741824}'"
-                ] //[cite: 5]
-                intervalMs: 30000 //[cite: 5]
+                ] 
+                intervalMs: 30000 
             }
 
             TrayModule {
@@ -160,11 +176,11 @@ PanelWindow {
 
             MorphingButton {
                 Layout.alignment: Qt.AlignVCenter
-                icon: "󰎟" //[cite: 5]
+                icon: "󰎟" 
                 text: "System"
                 
                 onClicked: {
-                    systemPanel.visible = !systemPanel.visible //[cite: 5]
+                    systemPanel.visible = !systemPanel.visible 
                 }
             }
         }

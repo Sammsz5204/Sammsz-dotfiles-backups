@@ -172,6 +172,16 @@ Rectangle {
         		        NumberAnimation { target: blob; property: "scale"; to: 1.14; duration: 150; easing.type: Easing.OutCubic }
         		        NumberAnimation { target: blob; property: "scale"; to: 1; duration: 150; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
                   } 
+
+                // O "acelera" do giro: um chute rapido pra frente que
+                // depois relaxa de volta a 0 (a rotacao de base — creepRot
+                // — continua por baixo, entao o efeito e' "ganhar um
+                // empurrao extra" e nao "trocar de velocidade de vez").
+                SequentialAnimation {
+                    id: burstAnim
+                    NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 880; easing.type: Easing.OutCubic }
+                    NumberAnimation { target: blob; property: "burstRot"; to: 60; duration: 520; easing.type: Easing.InOutCubic }
+                }
                 
 
                 // halo suave atras, fixo (nao morfa)
@@ -219,13 +229,22 @@ Rectangle {
                         ctx.fill();
                     }
 
-                    RotationAnimation on rotation {
-                        from: 0
-                        to: 360
-                        duration: root.context.unlockInProgress ? 900 : 1700
-                        loops: Animation.Infinite
-                        running: true
-                    }
+                // Rotacao em 2 camadas somadas: "creep" continuo e lento
+                // (a velocidade normal, baixa) + um "burst" que so' entra
+                // durante o bump/morph — e' isso que da a sensacao de
+                // "acelera, da um pulinho, e morpha", tudo junto na hora
+                // da troca de forma.
+                property real creepRot: 0
+                property real burstRot: 0
+                rotation: creepRot + burstRot
+
+                NumberAnimation on creepRot {
+                    from: 0
+                    to: 360
+                    duration: root.context.unlockInProgress ? 900 : 1500
+                    loops: Animation.Infinite
+                    running: true
+                }
                 }
             }
 
@@ -252,6 +271,7 @@ Rectangle {
                     blob.lobes = presets[idx].lobes;
                     blob.amplitude = presets[idx].amp;
                     bumpAnim.start();
+                    burstAnim.start();
                 }
             }
         }
