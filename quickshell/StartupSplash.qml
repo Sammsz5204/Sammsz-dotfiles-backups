@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
+import M3Shapes // <-- Added this so it actually knows what a MaterialShape is fr
 
 PanelWindow {
     id: splash
@@ -40,8 +41,8 @@ PanelWindow {
 
             SequentialAnimation {
                 id: burstAnim
-                NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 680; easing.type: Easing.OutCubic }
-                NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 480; easing.type: Easing.InOutCubic }
+                NumberAnimation { target: blob; property: "burstRot"; to: 150; duration: 180; easing.type: Easing.OutCubic }
+                NumberAnimation { target: blob; property: "burstRot"; to: 130; duration: 150; easing.type: Easing.InOutCubic }
             }
 
             Rectangle {
@@ -53,45 +54,14 @@ PanelWindow {
                 opacity: 0.15
             }
 
-            Canvas {
+            // The new clean shape component
+            MaterialShape {
                 id: blob
                 anchors.fill: parent
-
-                // mesma correcao de serrilhado do LockSurface.qml — ver
-                // comentario la' pra explicacao completa
-                antialiasing: true
-                smooth: true
-                renderTarget: Canvas.FramebufferObject
-                renderStrategy: Canvas.Cooperative
-
-                property real lobes: 8
-                property real amplitude: 0.15
-
-                Behavior on lobes { NumberAnimation { duration: 50; easing.type: Easing.InOutCubic } }
-                Behavior on amplitude { NumberAnimation { duration: 50; easing.type: Easing.InOutCubic } }
-
-                onLobesChanged: requestPaint()
-                onAmplitudeChanged: requestPaint()
-                Component.onCompleted: requestPaint()
-
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    const cx = width / 2, cy = height / 2;
-                    const baseR = Math.min(width, height) / 2 - 6;
-                    const steps = 1024;
-                    ctx.beginPath();
-                    for (let i = 0; i <= steps; i++) {
-                        const t = (i / steps) * Math.PI * 2;
-                        const r = baseR * (1 + amplitude * Math.cos(lobes * t));
-                        const x = cx + r * Math.cos(t);
-                        const y = cy + r * Math.sin(t);
-                        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                    }
-                    ctx.closePath();
-                    ctx.fillStyle = Colors.accent;
-                    ctx.fill();
-                }
+                color: Colors.accent
+                
+                animationDuration: 120
+                animationEasing.type: Easing.OutCubic
 
                 property real creepRot: 0
                 property real burstRot: 0
@@ -100,29 +70,29 @@ PanelWindow {
                 NumberAnimation on creepRot {
                     from: 0
                     to: 360
-                    duration: 1500
+                    duration: 900
                     loops: Animation.Infinite
                     running: true
                 }
             }
 
             Timer {
-                interval: 780
+                interval: 580
                 running: true
                 repeat: true
                 property int idx: 0
+                
+                // Only the softest, roundest shapes to mimic your old lobes/amplitude math
                 readonly property var presets: [
-                    { lobes: 9,  amp: 0.04 },
-                    { lobes: 10, amp: 0.15 },
-                    { lobes: 5,  amp: 0.05 },
-                    { lobes: 2,  amp: 0.1 },
-                    { lobes: 8,  amp: 0.14 },
-                    { lobes: 4,  amp: 0.2 }
+                    MaterialShape.Cookie9Sided,
+                    MaterialShape.Cookie6Sided,
+                    MaterialShape.Pentagon,
+                    MaterialShape.Pill
                 ]
+                
                 onTriggered: {
                     idx = (idx + 1) % presets.length;
-                    blob.lobes = presets[idx].lobes;
-                    blob.amplitude = presets[idx].amp;
+                    blob.shape = presets[idx];
                     bumpAnim.start();
                     burstAnim.start();
                 }

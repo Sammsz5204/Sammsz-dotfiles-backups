@@ -10,16 +10,13 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import QtQuick.Effects
-
+import M3Shapes
 
 Rectangle {
     id: root
     
-	
     required property LockContext context
     signal closed()
-
-    
 
     // Foco garantido mesmo se o mouse nao passar por cima primeiro
     focus: true
@@ -48,8 +45,6 @@ Rectangle {
             context.currentText += event.text;
         }
     }
-    
-
 
     // Leve "shake" quando a senha erra — feedback sem precisar de texto
     SequentialAnimation {
@@ -68,10 +63,7 @@ Rectangle {
         NumberAnimation { target: centerColumn; property: "scale"; from: 0.92; to: 1; duration: 280; easing.type: Easing.OutCubic }
     }
 
-    // Saida: toca DEPOIS que a senha ja foi validada com sucesso, e so'
-    // entao avisa o shell.qml (via closed()) que pode soltar o lock de
-    // verdade — sem isso, o unlock instantaneo nao deixa tempo nenhum
-    // pra qualquer animacao aparecer.
+    // Saida: toca DEPOIS que a senha ja foi validada com sucesso
     SequentialAnimation {
         id: exitAnim
         ParallelAnimation {
@@ -88,11 +80,6 @@ Rectangle {
     }
 
     // ---------------- dot de senha (usado pelo dotsRow mais abaixo) ----
-    // Nasce como poligono aleatorio de 3-5 lados (spring, overshoot),
-    // segura um instante, morfa suave pra circulo perfeito enquanto
-    // encolhe pro tamanho final. No backspace faz o inverso: ganha
-    // lobulos de volta (distorce) e desvanece encolhendo ate sumir —
-    // so' ai' o ListView pode destruir o item de verdade (delayRemove).
     Component {
         id: passwordDotComponent
 
@@ -101,58 +88,44 @@ Rectangle {
             implicitWidth: 20
             implicitHeight: 20
 
-            Canvas {
+            MaterialShape {
                 id: dotShape
                 anchors.centerIn: parent
                 width: 17
                 height: 17
                 scale: 0
                 opacity: 0
-
-                property real lobes: 4
-                property real amplitude: 0.4
-
-                onLobesChanged: requestPaint()
-                onAmplitudeChanged: requestPaint()
-
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    const cx = width / 2, cy = height / 2;
-                    const baseR = Math.min(width, height) / 2 - 1;
-                    const steps = 1024;
-                    ctx.beginPath();
-                    for (let i = 0; i <= steps; i++) {
-                        const t = (i / steps) * Math.PI * 2;
-                        const r = baseR * (1 + amplitude * Math.cos(lobes * t));
-                        const x = cx + r * Math.cos(t);
-                        const y = cy + r * Math.sin(t);
-                        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                    }
-                    ctx.closePath();
-                    ctx.fillStyle = Colors.fg;
-                    ctx.fill();
-                }
+                color: Colors.fg
+                
+                animationDuration: 240
+                animationEasing.type: Easing.InOutCubic
             }
 
             ListView.onAdd: {
                 const randomShapes = [
-                    { lobes: 3, amp: 0.20 },
-                    { lobes: 4, amp: 0.15 },
-                    { lobes: 5, amp: 0.20 },
+                    MaterialShape.Triangle,
+                    MaterialShape.Square,
+                    MaterialShape.Pentagon,
+                    MaterialShape.Sunny,
+                    MaterialShape.Diamond,
+                    MaterialShape.Ghostish
                 ];
-                const pick = randomShapes[Math.floor(Math.random() * randomShapes.length)];
-                dotShape.lobes = pick.lobes;
-                dotShape.amplitude = pick.amp;
+                dotShape.shape = randomShapes[Math.floor(Math.random() * randomShapes.length)];
                 popInAnim.start();
             }
 
             ListView.onRemove: {
                 dotItem.ListView.delayRemove = true;
+                
+                const randomShapes = [
+                    MaterialShape.Burst,
+                    MaterialShape.Ghostish,
+                    MaterialShape.Slanted
+                ];
+                dotShape.shape = randomShapes[Math.floor(Math.random() * randomShapes.length)];
                 removeAnim.start();
             }
 
-            // nasce grande/distorcido (spring) e assenta em circulo pequeno
             SequentialAnimation {
                 id: popInAnim
                 ParallelAnimation {
@@ -160,19 +133,17 @@ Rectangle {
                     NumberAnimation { target: dotShape; property: "opacity"; from: 0; to: 1; duration: 120 }
                 }
                 PauseAnimation { duration: 80 }
+                
+                ScriptAction { script: dotShape.shape = MaterialShape.Circle }
+                
                 ParallelAnimation {
-                    NumberAnimation { target: dotShape; property: "lobes"; to: 0; duration: 240; easing.type: Easing.InOutCubic }
-                    NumberAnimation { target: dotShape; property: "amplitude"; to: 0; duration: 240; easing.type: Easing.InOutCubic }
                     NumberAnimation { target: dotShape; property: "scale"; to: 1; duration: 240; easing.type: Easing.OutCubic }
                 }
             }
 
-            // inverso: ganha lobulos de novo (distorce) e desmancha
             SequentialAnimation {
                 id: removeAnim
                 ParallelAnimation {
-                    NumberAnimation { target: dotShape; property: "lobes"; to: 4; duration: 120; easing.type: Easing.InOutCubic }
-                    NumberAnimation { target: dotShape; property: "amplitude"; to: 0.4; duration: 120; easing.type: Easing.InOutCubic }
                     NumberAnimation { target: dotShape; property: "scale"; to: 1.4; duration: 120; easing.type: Easing.OutCubic }
                 }
                 ParallelAnimation {
@@ -192,13 +163,12 @@ Rectangle {
         fillMode: Image.PreserveAspectCrop
     }
 
-    // 2. Apply the heavy blur effect
     MultiEffect {
         anchors.fill: bgReal
         source: bgReal
         blurEnabled: true
-        blur: 1.0       // Intensity (0.0 to 1.0)
-        blurMax: 48     // Adjust radius (higher = softer blur, max is usually 64)
+        blur: 1.0       
+        blurMax: 48     
     }
 
     ColumnLayout {
@@ -253,34 +223,28 @@ Rectangle {
             precision: SystemClock.Minutes
         }
 
-
         ColumnLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 8
 
             Item {
-            	id: morphingIcon
+                id: morphingIcon
                 Layout.alignment: Qt.AlignHCenter
                 width: 30
                 height: 30
                 
                 SequentialAnimation {
                     id: bumpAnim
-        		        NumberAnimation { target: blob; property: "scale"; to: 1.14; duration: 150; easing.type: Easing.OutCubic }
-        		        NumberAnimation { target: blob; property: "scale"; to: 1; duration: 150; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
-                  } 
+                    NumberAnimation { target: blob; property: "scale"; to: 1.14; duration: 150; easing.type: Easing.OutCubic }
+                    NumberAnimation { target: blob; property: "scale"; to: 1; duration: 150; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
+                } 
 
-                // O "acelera" do giro: um chute rapido pra frente que
-                // depois relaxa de volta a 0 (a rotacao de base — creepRot
-                // — continua por baixo, entao o efeito e' "ganhar um
-                // empurrao extra" e nao "trocar de velocidade de vez").
                 SequentialAnimation {
                     id: burstAnim
                     NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 880; easing.type: Easing.OutCubic }
                     NumberAnimation { target: blob; property: "burstRot"; to: 75; duration: 520; easing.type: Easing.InOutCubic }
                 }
                 
-
                 // halo suave atras, fixo (nao morfa)
                 Rectangle {
                     anchors.centerIn: parent
@@ -291,63 +255,28 @@ Rectangle {
                     opacity: 0.15
                 }
 
-                Canvas {
+                MaterialShape {
                     id: blob
                     anchors.fill: parent
+                    color: Colors.accent
+                    
+                    animationDuration: 150 
+                    animationEasing.type: Easing.OutCubic
 
-                    property real lobes: 8
-                    property real amplitude: 0.15
+                    property real creepRot: 0
+                    property real burstRot: 0
+                    rotation: creepRot + burstRot
 
-                    Behavior on lobes { NumberAnimation { duration: 55; easing.type: Easing.InOutCubic } }
-                    Behavior on amplitude { NumberAnimation { duration: 55; easing.type: Easing.InOutCubic } }
-
-                
-
-                    onLobesChanged: requestPaint()
-                    onAmplitudeChanged: requestPaint()
-                    Component.onCompleted: requestPaint()
-
-                    onPaint: {
-                        const ctx = getContext("2d");
-                        ctx.clearRect(0, 0, width, height);
-                        const cx = width / 2, cy = height / 2;
-                        const baseR = Math.min(width, height) / 2 - 4;
-                        const steps = 256;
-                        ctx.beginPath();
-                        for (let i = 0; i <= steps; i++) {
-                            const t = (i / steps) * Math.PI * 2;
-                            const r = baseR * (1 + amplitude * Math.cos(lobes * t));
-                            const x = cx + r * Math.cos(t);
-                            const y = cy + r * Math.sin(t);
-                            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                        }
-                        ctx.closePath();
-                        ctx.fillStyle = Colors.accent;
-                        ctx.fill();
+                    NumberAnimation on creepRot {
+                        from: 0
+                        to: 360
+                        duration: root.context.unlockInProgress ? 700 : 1400
+                        loops: Animation.Infinite
+                        running: true
                     }
-
-                // Rotacao em 2 camadas somadas: "creep" continuo e lento
-                // (a velocidade normal, baixa) + um "burst" que so' entra
-                // durante o bump/morph — e' isso que da a sensacao de
-                // "acelera, da um pulinho, e morpha", tudo junto na hora
-                // da troca de forma.
-                property real creepRot: 0
-                property real burstRot: 0
-                rotation: creepRot + burstRot
-
-                NumberAnimation on creepRot {
-                    from: 0
-                    to: 360
-                    duration: root.context.unlockInProgress ? 700 : 1400
-                    loops: Animation.Infinite
-                    running: true
-                }
                 }
             }
 
-
-            // ciclo de formas: troca o preset-alvo, o Behavior acima
-            // cuida da transicao suave entre um e outro
             Timer {
                 interval: root.context.unlockInProgress ? 800 : 1100
                 running: true
@@ -355,25 +284,24 @@ Rectangle {
 
                 property int idx: 0
                 readonly property var presets: [
-                    { lobes: 9,  amp: 0.04 },
-                    { lobes: 10,  amp: 0.15 },
-                    { lobes: 5,  amp: 0.05 },
-                    { lobes: 2,  amp: 0.21 },
-                    { lobes: 8, amp: 0.14 },
-                    { lobes: 4, amp : 0.2}
+                    MaterialShape.Cookie9Sided,
+                    MaterialShape.Sunny,
+                    MaterialShape.Cookie6Sided,
+                    MaterialShape.Burst,
+                    MaterialShape.SoftBoom,
+                    MaterialShape.Flower
                 ]
 
                 onTriggered: {
                     idx = (idx + 1) % presets.length;
-                    blob.lobes = presets[idx].lobes;
-                    blob.amplitude = presets[idx].amp;
+                    blob.shape = presets[idx]; 
                     bumpAnim.start();
                     burstAnim.start();
                 }
             }
         }
 
-        // ---------------- campo de senha (pilula, mesma linguagem do MorphingButton) ----------------
+        // ---------------- campo de senha (pilula) ----------------
         Rectangle {
             id: inputPill
             Layout.alignment: Qt.AlignHCenter
@@ -399,14 +327,6 @@ Rectangle {
                     color: Colors.muted
                 }
 
-                // Cada caractere digitado vira um "dot" que nasce como
-                // poligono aleatorio (3-5 lados, mesma matematica cos-lobulo
-                // do avatar) e morfa pra um circulo — igual o Caelestia faz,
-                // so' que ao inves de trocar a forma instantaneamente no
-                // meio da animacao (o truque real deles: PropertyAction sem
-                // transicao, disfarcado pelo scale mudando ao mesmo tempo),
-                // deixei o morph em si suave tambem, porque o Canvas ja
-                // supporta isso nativamente sem custo extra.
                 Item {
                     Layout.fillWidth: true
                     implicitHeight: 20
@@ -434,10 +354,6 @@ Rectangle {
                         model: ListModel { id: dotsModel }
                         delegate: passwordDotComponent
 
-                        // Precisa existir pro "ListView.delayRemove" do
-                        // delegate ter efeito — o trabalho de verdade
-                        // roda dentro do delegate (ListView.onRemove),
-                        // essa transicao fica so' como "ativador".
                         remove: Transition {}
                     }
 
@@ -451,7 +367,6 @@ Rectangle {
                     }
                 }
 
-                // Botao de enviar — mesmo "morph" de largura que o resto do rice usa
                 Rectangle {
                     id: sendBtn
                     implicitHeight: 36
