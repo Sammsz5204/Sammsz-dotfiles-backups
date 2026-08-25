@@ -26,8 +26,8 @@ import QtQuick.Controls
 PopupWindow {
     id: root
 
-    implicitWidth: 380
-    implicitHeight: 600
+    implicitWidth: 390
+    implicitHeight: 550
 
     color: "transparent"
     visible: false
@@ -36,9 +36,7 @@ PopupWindow {
     property real ramPct: 0
     property real diskPct: 0
 
-    property string songTitle: "Nenhuma música"
-    property string songArtist: "Desconhecido"
-    property string songStatus: "Stopped"
+
 
     property string uptimeStr: "--"
     property string clockNow: Qt.formatDateTime(sysClock.date, "hh:mm")
@@ -168,7 +166,7 @@ PopupWindow {
         anchors.fill: parent
         color: Colors.bg
         border.color: SystemPanelState.editMode ? Colors.brightBlue : Colors.surface
-        border.width: 2
+        border.width: 0
         radius: 19
 
         Behavior on border.color { ColorAnimation { duration: 200 } }
@@ -176,13 +174,13 @@ PopupWindow {
         ScrollView {
             id: scrollView
             anchors.fill: parent
-            anchors.margins: 15
+            anchors.margins: 10
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 width: scrollView.availableWidth
-                spacing: 10
+                spacing: 15
 
             Rectangle {
                 Layout.fillWidth: true
@@ -192,8 +190,8 @@ PopupWindow {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 15
+                    anchors.margins: 20
+                    spacing: 20
 
                     StatRing {
                         icon: "󰻠"
@@ -221,72 +219,7 @@ PopupWindow {
                 }
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 62
-                color: Colors.surface
-                radius: 18
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 26
-
-                    Rectangle {
-                        width: 38
-                        height: 38
-                        radius: 14
-                        color: Colors.bg
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "󰝚"
-                            color: Colors.blue
-                            font.pixelSize: 18
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-
-                        Text {
-                            text: root.songTitle
-                            color: Colors.fg
-                            font.pixelSize: 11
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-
-                        Text {
-                            text: root.songArtist
-                            color: Colors.muted
-                            font.pixelSize: 10
-                            font.weight: Font.Medium
-                            elide: Text.ElideRight
-                        }
-                    }
-
-                    RowLayout {
-                        spacing: 12
-
-                        MediaButton {
-                            iconText: "󰒮"
-                            onClicked: Quickshell.execDetached(["playerctl", "previous"])
-                        }
-
-                        MediaButton {
-                            iconText: root.songStatus === "Playing" ? "󰏤" : "󰐊"
-                            onClicked: Quickshell.execDetached(["playerctl", "play-pause"])
-                        }
-
-                        MediaButton {
-                            iconText: "󰒭"
-                            onClicked: Quickshell.execDetached(["playerctl", "next"])
-                        }
-                    }
-                }
-            }
+            
 
             // ---------------- cabecalho: titulo + botao de editar ----------------
             RowLayout {

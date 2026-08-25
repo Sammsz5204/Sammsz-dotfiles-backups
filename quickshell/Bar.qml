@@ -200,6 +200,6 @@ PanelWindow {
 
         anchor.window: bar
         anchor.rect.x: bar.width - width - 10
-        anchor.rect.y: bar.height
+        anchor.rect.y: bar.height + 5
     }
 }
