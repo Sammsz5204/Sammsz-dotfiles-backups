@@ -4,6 +4,25 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 
+// ============================================================
+// SystemPanelPopup.qml
+//
+// Arquitetura (item 15 do pedido): 3 camadas separadas.
+//   DADOS  -> SystemPanelModules.qml  (o que existe: icone/cmd/cor)
+//   ESTADO -> SystemPanelState.qml    (o que ta ativo, ordem, colunas,
+//                                       persistido em disco)
+//   UI     -> este arquivo            (so' renderiza o que o Estado
+//                                       manda, olhando os Dados)
+//
+// A grade de acoes (que antes eram 16 ActionBtn{} copiados/colados)
+// agora e' um Repeater sobre SystemPanelState.visibleModules — os
+// COMANDOS continuam sendo os mesmos 16 de sempre, so' viraram dados
+// em vez de blocos QML fixos (item 2/12/16).
+//
+// Tudo que NAO e' o grid de acoes (stats de CPU/RAM/disco, player,
+// relogio, uptime) continua exatamente como estava — item 13.
+// ============================================================
+
 PopupWindow {
     id: root
 
@@ -12,7 +31,6 @@ PopupWindow {
 
     color: "transparent"
     visible: false
-
 
     property real cpuPct: 0
     property real ramPct: 0
@@ -24,6 +42,52 @@ PopupWindow {
 
     property string uptimeStr: "--"
     property string clockNow: Qt.formatDateTime(sysClock.date, "hh:mm")
+
+    // ---------------- drag-and-drop pra reordenar ----------------
+    // O tile de verdade fica com opacity 0 (via "ghosted") enquanto o
+    // "fantasma" abaixo segue o mouse. A reordenacao acontece AO VIVO
+    // conforme o fantasma passa por cima de outro tile — GridLayout
+    // reflui tudo sozinho (motor de layout de verdade do Qt, nao
+    // posicionamento manual), o resto dos tiles "andam" pra abrir
+    // espaco automaticamente.
+    property string draggingId: ""
+    property var draggingModule: draggingId !== "" ? SystemPanelModules.byId(draggingId) : null
+
+    function beginDrag(moduleId, gx, gy) {
+        root.draggingId = moduleId;
+        updateGhostPosition(gx, gy);
+    }
+
+    function updateDrag(gx, gy) {
+        if (root.draggingId === "") return;
+        updateGhostPosition(gx, gy);
+
+        for (let i = 0; i < actionsRepeater.count; i++) {
+            const item = actionsRepeater.itemAt(i);
+            if (!item) continue;
+            const topLeft = item.mapToGlobal(0, 0);
+            const inside = gx >= topLeft.x && gx <= topLeft.x + item.width
+                         && gy >= topLeft.y && gy <= topLeft.y + item.height;
+            if (inside) {
+                if (item.moduleId !== root.draggingId) {
+                    SystemPanelState.reorderTo(root.draggingId, i);
+                }
+                break;
+            }
+        }
+    }
+
+    function endDrag() {
+        root.draggingId = "";
+    }
+
+    function updateGhostPosition(gx, gy) {
+        const local = ghostLayer.mapFromGlobal(gx, gy);
+        ghost.x = local.x - ghost.width / 2;
+        ghost.y = local.y - ghost.height / 2;
+    }
+
+    property bool confirmingReset: false
 
     SystemClock {
         id: sysClock
@@ -94,17 +158,31 @@ PopupWindow {
         onTriggered: { diskProc.running = true; uptimeProc.running = true; }
     }
 
+    Timer {
+        id: resetConfirmTimeout
+        interval: 3000
+        onTriggered: root.confirmingReset = false
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Colors.bg
-        border.color: Colors.surface
+        border.color: SystemPanelState.editMode ? Colors.brightBlue : Colors.surface
         border.width: 2
         radius: 19
 
-        ColumnLayout {
+        Behavior on border.color { ColorAnimation { duration: 200 } }
+
+        ScrollView {
+            id: scrollView
             anchors.fill: parent
             anchors.margins: 15
-            spacing: 10
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+            ColumnLayout {
+                width: scrollView.availableWidth
+                spacing: 10
 
             Rectangle {
                 Layout.fillWidth: true
@@ -143,136 +221,302 @@ PopupWindow {
                 }
             }
 
-            ColumnLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 4
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 62
+                color: Colors.surface
+                radius: 18
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 26
+
+                    Rectangle {
+                        width: 38
+                        height: 38
+                        radius: 14
+                        color: Colors.bg
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰝚"
+                            color: Colors.blue
+                            font.pixelSize: 18
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            text: root.songTitle
+                            color: Colors.fg
+                            font.pixelSize: 11
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            text: root.songArtist
+                            color: Colors.muted
+                            font.pixelSize: 10
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    RowLayout {
+                        spacing: 12
+
+                        MediaButton {
+                            iconText: "󰒮"
+                            onClicked: Quickshell.execDetached(["playerctl", "previous"])
+                        }
+
+                        MediaButton {
+                            iconText: root.songStatus === "Playing" ? "󰏤" : "󰐊"
+                            onClicked: Quickshell.execDetached(["playerctl", "play-pause"])
+                        }
+
+                        MediaButton {
+                            iconText: "󰒭"
+                            onClicked: Quickshell.execDetached(["playerctl", "next"])
+                        }
+                    }
+                }
             }
 
-
-            Text {
-                text: "AÇÕES RÁPIDAS"
-                color: Colors.muted
-                font.pixelSize: 11
-                font.bold: true
+            // ---------------- cabecalho: titulo + botao de editar ----------------
+            RowLayout {
+                Layout.fillWidth: true
                 Layout.leftMargin: 4
+
+                Text {
+                    text: SystemPanelState.editMode ? "PERSONALIZAR" : "AÇÕES RÁPIDAS"
+                    color: SystemPanelState.editMode ? Colors.brightBlue : Colors.muted
+                    font.pixelSize: 11
+                    font.bold: true
+                    Layout.fillWidth: true
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+
+                Rectangle {
+                    implicitWidth: 28
+                    implicitHeight: 24
+                    radius: 8
+                    color: editToggleArea.containsMouse ? Colors.surface : "transparent"
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: SystemPanelState.editMode ? "󰄲" : "󰏫"
+                        color: SystemPanelState.editMode ? Colors.green : Colors.muted
+                        font.pixelSize: 13
+                    }
+
+                    MouseArea {
+                        id: editToggleArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            SystemPanelState.toggleEditMode();
+                            root.confirmingReset = false;
+                        }
+                    }
+                }
             }
 
+            // ---------------- grid de acoes (dirigido por dados) ----------------
             GridLayout {
-                columns: 4
+                id: actionsGrid
+                columns: SystemPanelState.gridColumns
                 columnSpacing: 10
                 rowSpacing: 10
                 Layout.fillWidth: true
 
-                ActionBtn {
-                    icon: "󰐥"
-                    label: "Desligar"
-                    iconColor: Colors.brightRed
-                    cmd: "systemctl poweroff"
+                Repeater {
+                    id: actionsRepeater
+                    model: SystemPanelState.visibleModules
+
+                    delegate: ActionBtn {
+                        required property var modelData
+
+                        moduleId: modelData.id
+                        icon: modelData.icon
+                        label: modelData.label
+                        iconColor: modelData.iconColor
+                        cmd: modelData.cmd
+                        ghosted: root.draggingId === modelData.id
+
+                        onCloseRequested: root.visible = false
+                        onDragStarted: (mid, gx, gy) => root.beginDrag(mid, gx, gy)
+                        onDragMoved: (gx, gy) => root.updateDrag(gx, gy)
+                        onDragEnded: root.endDrag()
+                    }
+                }
+            }
+
+            // ---------------- modulos disponiveis (so' no modo de edicao) ----------------
+            ColumnLayout {
+                visible: SystemPanelState.editMode && SystemPanelState.availableToAdd.length > 0
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                spacing: 6
+
+                Text {
+                    text: "MÓDULOS DISPONÍVEIS"
+                    color: Colors.muted
+                    font.pixelSize: 10
+                    font.bold: true
+                    Layout.leftMargin: 4
                 }
 
-                ActionBtn {
-                    icon: "󰜉"
-                    label: "Reiniciar"
-                    iconColor: Colors.yellow
-                    cmd: "systemctl reboot"
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Repeater {
+                        model: SystemPanelState.availableToAdd
+
+                        delegate: Rectangle {
+                            id: chip
+                            required property var modelData
+
+                            implicitWidth: chipRow.implicitWidth + 22
+                            implicitHeight: 30
+                            radius: 15
+                            color: chipArea.containsMouse ? Colors.bg : Colors.surface
+                            border.color: Colors.muted
+                            border.width: 1
+
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            RowLayout {
+                                id: chipRow
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                Text {
+                                    text: "+"
+                                    color: Colors.green
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                }
+                                Text {
+                                    text: chip.modelData.icon + "  " + chip.modelData.label
+                                    color: Colors.fg
+                                    font.pixelSize: 11
+                                }
+                            }
+
+                            MouseArea {
+                                id: chipArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: SystemPanelState.show(chip.modelData.id)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---------------- colunas do grid + restaurar padrao ----------------
+            ColumnLayout {
+                visible: SystemPanelState.editMode
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                spacing: 8
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Text {
+                        text: "Colunas do grid"
+                        color: Colors.muted
+                        font.pixelSize: 11
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 4
+                    }
+
+                    Rectangle {
+                        width: 24; height: 24; radius: 12
+                        color: colMinusArea.containsMouse ? Colors.bg : Colors.surface
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Text { anchors.centerIn: parent; text: "－"; color: Colors.fg; font.pixelSize: 12; font.bold: true }
+
+                        MouseArea {
+                            id: colMinusArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: if (SystemPanelState.gridColumns > 2) SystemPanelState.gridColumns -= 1
+                        }
+                    }
+
+                    Text {
+                        text: SystemPanelState.gridColumns
+                        color: Colors.fg
+                        font.pixelSize: 12
+                        font.bold: true
+                        Layout.preferredWidth: 16
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Rectangle {
+                        width: 24; height: 24; radius: 12
+                        color: colPlusArea.containsMouse ? Colors.bg : Colors.surface
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        Text { anchors.centerIn: parent; text: "＋"; color: Colors.fg; font.pixelSize: 12; font.bold: true }
+
+                        MouseArea {
+                            id: colPlusArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: if (SystemPanelState.gridColumns < 6) SystemPanelState.gridColumns += 1
+                        }
+                    }
                 }
 
-                ActionBtn {
-                    icon: "󰍃"
-                    label: "Sair"
-                    iconColor: Colors.yellow
-                    cmd: "hyprctl dispatch exit"
-                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 34
+                    radius: 12
+                    color: root.confirmingReset ? Colors.brightRed : Colors.surface
 
-                ActionBtn {
-                    icon: "󰌾"
-                    label: "Bloquear"
-                    iconColor: Colors.yellow
-                    cmd: "quickshell -p ~/.config/quickshell/ ipc call lock engage"
-                }
+                    Behavior on color { ColorAnimation { duration: 150 } }
 
-                ActionBtn {
-                    icon: "󰒲"
-                    label: "Suspender"
-                    iconColor: Colors.blue
-                    cmd: "systemctl suspend"
-                }
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.confirmingReset ? "Confirmar? isso apaga sua personalização" : "Restaurar padrão"
+                        color: root.confirmingReset ? Colors.bg : Colors.fg
+                        font.pixelSize: 11
+                        font.bold: root.confirmingReset
+                    }
 
-                ActionBtn {
-                    icon: "󰆍"
-                    label: "Terminal"
-                    iconColor: Colors.green
-                    cmd: "kitty &"
-                }
-
-                ActionBtn {
-                    icon: "󰉋"
-                    label: "Arquivos"
-                    iconColor: Colors.green
-                    cmd: "nautilus &"
-                }
-
-                ActionBtn {
-                    icon: "󰒓"
-                    label: "Configs"
-                    iconColor: Colors.brightBlue
-                    cmd: "kitty -e nvim ~/.config/hypr/hyprland.lua &"
-                }
-
-                ActionBtn {
-                    icon: "󰖩"
-                    label: "Rede"
-                    iconColor: Colors.blue
-                    cmd: "nm-connection-editor &"
-                }
-
-                ActionBtn {
-                    icon: "󰍛"
-                    label: "Monitor"
-                    iconColor: Colors.brightBlue
-                    cmd: "kitty -e btop --force-utf &"
-                }
-
-                ActionBtn {
-                    icon: "󰂚"
-                    label: "Notificações"
-                    iconColor: Colors.yellow
-                    cmd: "swaync-client -t &"
-                }
-
-                ActionBtn {
-                    icon: "󰅖"
-                    label: "Fechar"
-                    iconColor: Colors.brightRed
-                    cmd: "__CLOSE__"
-                }
-
-                ActionBtn {
-                    icon: "󰸉"
-                    label: "Wall (Aleat)"
-                    iconColor: Colors.brightGreen
-                    cmd: "~/.config/scripts/random_wallpaper.sh &"
-                }
-
-                ActionBtn {
-                    icon: "󰄄"
-                    label: "Wall (Menu)"
-                    iconColor: Colors.brightBlue
-                    cmd: "lua5.1 /home/sam/.config/scripts/wallchanger.lua &"
-                }
-
-                ActionBtn {
-                    icon: "󰑐"
-                    label: "Reload QS"
-                    iconColor: Colors.muted
-                    cmd: "killall quickshell && quickshell"
-                }
-
-                ActionBtn {
-                    icon: "󰑐"
-                    label: "Reload Hypr"
-                    iconColor: Colors.muted
-                    cmd: "hyprctl reload"
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.confirmingReset) {
+                                SystemPanelState.resetToDefaults();
+                                root.confirmingReset = false;
+                                resetConfirmTimeout.stop();
+                            } else {
+                                root.confirmingReset = true;
+                                resetConfirmTimeout.restart();
+                            }
+                        }
+                    }
                 }
             }
 
@@ -327,130 +571,49 @@ PopupWindow {
                     }
                 }
             }
-        }
-    }
-
-component ActionBtn: Rectangle {
-        property string icon: ""
-        property string label: ""
-        property color iconColor: Colors.fg
-        property string cmd: ""
-
-        Layout.fillWidth: true
-        Layout.preferredHeight: 65
-
-        // Fundo tonal liso, sem borda. Clareia no hover e escurece no press.
-        color: mArea.pressed 
-            ? Colors.surface
-            : (mArea.containsMouse ? Qt.lighter(Colors.surface, 1.9) : Colors.surface)
-
-        
-
-        // Efeito Squish (esmaga no clique) e Float (cresce no hover)
-        radius: mArea.pressed ? 10 : (mArea.containsMouse ? 20 : 15 )
-        
-        Behavior on radius {
-            NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
-        }
-
-        Behavior on color {
-            ColorAnimation { duration: 150 }
-        }
-
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 4
-
-            Text {
-                text: parent.parent.icon
-                color: parent.parent.iconColor
-                font.pixelSize: 20
-                Layout.alignment: Qt.AlignHCenter
-                
-                // O ícone dá um pulinho extra descolado do botão
-                scale: mArea.containsMouse ? 1.15 : 1.0
-                Behavior on scale {
-                    NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 3.0 }
-                }
-            }
-
-            Text {
-                text: parent.parent.label
-                color: Colors.fg
-                font.pixelSize: 10
-                font.weight: Font.Medium
-                Layout.alignment: Qt.AlignHCenter
             }
         }
 
-        MouseArea {
-            id: mArea
-
+        // ---------------- fantasma do drag-and-drop ----------------
+        // Cobre o popup inteiro, mas nao tem MouseArea nenhuma — entao
+        // nunca captura clique, so' serve de "tela" pra desenhar o
+        // tile flutuante em cima de tudo (z maior que o ScrollView por
+        // estar declarado depois dele).
+        Item {
+            id: ghostLayer
             anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor // Mãozinha pra dar aquele feedback de clique
+            visible: root.draggingId !== ""
 
-            onClicked: {
-                if (parent.cmd === "__CLOSE__") {
-                    root.visible = false
-                    return
-                }
+            Rectangle {
+                id: ghost
+                width: 65
+                height: 65
+                radius: 20
+                color: Colors.surface
+                opacity: 0.92
+                scale: 1.08
+                border.width: 2
+                border.color: Colors.brightBlue
 
-                if (parent.cmd !== "") {
-                    Quickshell.execDetached([
-                        "bash",
-                        "-c",
-                        parent.cmd
-                    ])
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 4
 
-                    root.visible = false
+                    Text {
+                        text: root.draggingModule ? root.draggingModule.icon : ""
+                        color: root.draggingModule ? root.draggingModule.iconColor : Colors.fg
+                        font.pixelSize: 20
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+                    Text {
+                        text: root.draggingModule ? root.draggingModule.label : ""
+                        color: Colors.fg
+                        font.pixelSize: 10
+                        font.weight: Font.Medium
+                        Layout.alignment: Qt.AlignHCenter
+                    }
                 }
             }
         }
-    }
-
-    component MediaButton: Rectangle {
-        property string iconText: ""
-
-        // Deixei levemente maior e totalmente redondo (Circle/Pill)
-        implicitWidth: 32
-        implicitHeight: 32
-
-         
-
-        color: mouseArea.pressed
-            ? Colors.surface
-            : (mouseArea.containsMouse ? Colors.bg : "transparent")
-
-        // Mesmo efeito de mola dos botões principais
-        radius: mouseArea.pressed ? 12 : (mouseArea.containsMouse ? 20 : 0)
-
-        Behavior on radius {
-            NumberAnimation { duration: 250; easing.type: Easing.OutBack}
-        }
-
-        Behavior on color {
-            ColorAnimation { duration: 120 }
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: parent.parent.iconText
-            color: mouseArea.containsMouse ? Colors.blue : Colors.fg
-            font.family: "JetBrainsMono Nerd Font"
-            font.pixelSize: 15
-        }
-
-        MouseArea {
-            id: mouseArea
-
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-
-            onClicked: parent.parent.clicked()
-        }
-
-        signal clicked()
     }
 }

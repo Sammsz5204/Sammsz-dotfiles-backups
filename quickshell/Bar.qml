@@ -180,7 +180,7 @@ PanelWindow {
                 text: "System"
                 
                 onClicked: {
-                    systemPanel.visible = !systemPanel.visible 
+                    systemPanel.visible = !systemPanel.visible
                 }
             }
         }
@@ -200,6 +200,6 @@ PanelWindow {
 
         anchor.window: bar
         anchor.rect.x: bar.width - width - 10
-        anchor.rect.y: bar.height + 5
+        anchor.rect.y: bar.height
     }
 }
