@@ -10,15 +10,18 @@ import Quickshell
 // invisivel e sem efeito nenhum quando SystemPanelState.editMode e'
 // false. Uso normal continua identico a antes.
 // ============================================================
-Item {
+Rectangle {
     id: root
 
-    // 1. Keep ALL your original properties and signals here on the root Item
     property string moduleId: ""
     property string icon: ""
     property string label: ""
     property color iconColor: Colors.fg
     property string cmd: ""
+
+    // Quando o proprio drag deste tile esta em andamento, a Popup pede
+    // pra esconder o tile "de verdade" (o "fantasma" que segue o mouse
+    // e' quem fica visivel nesse momento) — ver SystemPanelPopup.qml.
     property bool ghosted: false
 
     signal closeRequested()
@@ -26,30 +29,50 @@ Item {
     signal dragMoved(real globalX, real globalY)
     signal dragEnded()
 
-    // 2. The invisible wrapper takes the layout properties instantly
     Layout.fillWidth: true
-    Layout.preferredHeight: 65 * SystemPanelState.spanFor(moduleId).rows 
+    Layout.preferredHeight: 65
     Layout.columnSpan: SystemPanelState.spanFor(moduleId).cols
     Layout.rowSpan: SystemPanelState.spanFor(moduleId).rows
 
-    // 3. The visible Rectangle smoothly animates to fill the wrapper
-    Rectangle {
-        id: bgRect
-        
-        // Anchor to the center so it squishes/grows evenly outward
-        anchors.centerIn: parent
-        width: parent.width
-        height: parent.height
+    // So liga os Behaviors abaixo DEPOIS que o layout inicial ja'
+    // assentou uma vez. Sem isso, a primeira abertura do painel tambem
+    // "anima" (cada tile parece crescer/deslizar do zero na hora de
+    // montar) — nao e' isso que a gente quer, so' o resize de verdade
+    // deve animar. Qt.callLater empurra a troca pro proximo ciclo do
+    // event loop, depois que o primeiro layout sincrono ja rodou.
+    property bool animReady: false
+    Component.onCompleted: Qt.callLater(() => root.animReady = true)
 
-        Behavior on width {
-            NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-        }
-        Behavior on height {
-            NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-        }
+    // O span (Layout.columnSpan/rowSpan) e' um numero inteiro — nao da
+    // pra "animar" 1->2 suavemente, o Qt so' sabe pular. O que da pra
+    // animar e' o width/height/x/y de VERDADE que o GridLayout calcula
+    // pra esse item a cada mudanca de span — e' nisso que o Behavior
+    // pega, fazendo o tile "esticar" com uma mola em vez de saltar na
+    // hora. x/y entraram porque crescer o span pode empurrar o proprio
+    // tile pra outra linha/coluna (o "teleporte" reportado: sem
+    // Behavior nisso, a posicao pulava instantanea e so' DEPOIS o
+    // tamanho animava, descolado). Ainda so' nesse tile, nao nos
+    // vizinhos — nao mexi em nada do arrastar, que ja ficou perfeito.
+    Behavior on width {
+        enabled: root.animReady
+        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+    }
+    Behavior on height {
+        enabled: root.animReady
+        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+    }
+    Behavior on x {
+        enabled: root.animReady
+        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+    }
+    Behavior on y {
+        enabled: root.animReady
+        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+    }
 
-        opacity: root.ghosted ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+    opacity: ghosted ? 0 : 1
+    Behavior on opacity { NumberAnimation { duration: 100 } }
+
     // Fundo tonal liso, sem borda. Clareia no hover e escurece no press.
     color: mArea.pressed
         ? Colors.surface
@@ -187,29 +210,20 @@ Item {
         z: 10
 
         Canvas {
-        anchors.fill: parent
-        onPaint: {
-            const ctx = getContext("2d");
-            ctx.clearRect(0, 0, width, height);
-            ctx.strokeStyle = Colors.brightGreen; 
-            ctx.lineWidth = 3;
-            ctx.lineCap = "round";
-            // Add lineJoin to smooth out the connection just in case
-            ctx.lineJoin = "round"; 
-            
-            ctx.beginPath();	
-            // Start at the bottom left of the handle
-            ctx.moveTo(width * 0.4, height * 0.9);
-            
-            // Draw a rounded curve towards the bottom right, then heading up
-            // The '8' at the end is the radius of the curve — adjust this if you want it rounder!
-            ctx.arcTo(width * 0.9, height * 0.9, width * 0.9, height * 0.4, 8);
-            
-            // Finish the line going up
-            ctx.lineTo(width * 0.9, height * 0.4);
-            ctx.stroke();
+            anchors.fill: parent
+            onPaint: {
+                const ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
+                ctx.strokeStyle = Colors.brightGreen;
+                ctx.lineWidth = 3;
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(width * 0.4, height * 0.9);
+                ctx.lineTo(width * 0.9, height * 0.9);
+                ctx.lineTo(width * 0.9, height * 0.4);
+                ctx.stroke();
+            }
         }
-    }
 
         MouseArea {
             id: resizeArea
@@ -311,5 +325,4 @@ Item {
             }
         }
     }
-}
 }

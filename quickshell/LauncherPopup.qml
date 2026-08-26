@@ -32,14 +32,23 @@ PopupWindow {
         }
     }
 
-    // Leitura dos apps via Python (roda apenas uma vez)
+    // Leitura dos apps via Python (incluindo Flatpaks e rotas XDG)
     Process {
         id: appScanner
         command: [
             "python3", "-c",
             "import os, glob, configparser, json\n" +
             "apps = []\n" +
-            "paths = ['/usr/share/applications/*.desktop', os.path.expanduser('~/.local/share/applications/*.desktop')]\n" +
+            "paths = [\n" +
+            "    '/usr/share/applications/*.desktop',\n" +
+            "    '/usr/local/share/applications/*.desktop',\n" +
+            "    os.path.expanduser('~/.local/share/applications/*.desktop'),\n" +
+            "    '/var/lib/flatpak/exports/share/applications/*.desktop',\n" +
+            "    os.path.expanduser('~/.local/share/flatpak/exports/share/applications/*.desktop')\n" +
+            "]\n" +
+            "xdg = os.environ.get('XDG_DATA_DIRS', '')\n" +
+            "for d in xdg.split(':'):\n" +
+            "    if d: paths.append(os.path.join(d, 'applications', '*.desktop'))\n" +
             "seen = set()\n" +
             "for p in paths:\n" +
             "    for f in glob.glob(p):\n" +
@@ -49,10 +58,8 @@ PopupWindow {
             "            if 'Desktop Entry' in cfg:\n" +
             "                e = cfg['Desktop Entry']\n" +
             "                if e.get('NoDisplay', 'false').lower() == 'true' or e.get('Type', 'Application') != 'Application': continue\n" +
-            "                # Pega o nome padrão ou tenta variações\n" +
             "                name = e.get('Name', '')\n" +
-            "                if not name: continue\n" +
-            "                if name in seen: continue\n" +
+            "                if not name or name in seen: continue\n" +
             "                seen.add(name)\n" +
             "                exec_cmd = e.get('Exec', '').split('%')[0].strip()\n" +
             "                if not exec_cmd: continue\n" +
@@ -60,7 +67,6 @@ PopupWindow {
             "                apps.append({'name': name, 'icon': e.get('Icon', ''), 'exec': exec_cmd, 'comment': comment})\n" +
             "        except Exception:\n" +
             "            pass\n" +
-            "# Fallback caso algum app importante passe batido\n" +
             "apps.sort(key=lambda x: x['name'].lower())\n" +
             "print(json.dumps(apps))"
         ]
