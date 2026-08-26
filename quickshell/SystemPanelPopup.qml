@@ -27,7 +27,7 @@ PopupWindow {
     id: root
 
     implicitWidth: 380
-    implicitHeight: 625
+    implicitHeight: 600
 
     color: "transparent"
     visible: false
