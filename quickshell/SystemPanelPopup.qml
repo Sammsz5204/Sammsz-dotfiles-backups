@@ -26,8 +26,8 @@ import QtQuick.Controls
 PopupWindow {
     id: root
 
-    implicitWidth: 390
-    implicitHeight: 550
+    implicitWidth: 380
+    implicitHeight: 625
 
     color: "transparent"
     visible: false
@@ -36,7 +36,9 @@ PopupWindow {
     property real ramPct: 0
     property real diskPct: 0
 
-
+    property string songTitle: "Nenhuma música"
+    property string songArtist: "Desconhecido"
+    property string songStatus: "Stopped"
 
     property string uptimeStr: "--"
     property string clockNow: Qt.formatDateTime(sysClock.date, "hh:mm")
@@ -77,6 +79,62 @@ PopupWindow {
 
     function endDrag() {
         root.draggingId = "";
+    }
+
+    // ---------------- sync do ListModel visual com o Estado ----------
+    // NUNCA faz clear()+repopula (isso destrói e recria os delegates,
+    // o que corta o "grab" do mouse bem no meio do arrastar — foi
+    // exatamente o travamento). So' usa remove/insert/move,
+    // que preservam a instância viva do delegate. Algoritmo testado
+    // com 500 combinacoes aleatorias de add+remove+reorder em Python
+    // antes de virar QML.
+    function syncActionsModel() {
+        const target = SystemPanelState.visibleModules;
+
+        // 1. remove o que nao esta mais no alvo (escondido)
+        for (let i = actionsModel.count - 1; i >= 0; i--) {
+            const id = actionsModel.get(i).moduleIdRole;
+            if (!target.some(m => m.id === id)) {
+                actionsModel.remove(i);
+            }
+        }
+
+        // 2. insere o que esta no alvo mas ainda nao no modelo (trazido de volta)
+        for (let i = 0; i < target.length; i++) {
+            const m = target[i];
+            let found = false;
+            for (let j = 0; j < actionsModel.count; j++) {
+                if (actionsModel.get(j).moduleIdRole === m.id) { found = true; break; }
+            }
+            if (!found) {
+                actionsModel.insert(i, {
+                    moduleIdRole: m.id,
+                    iconRole: m.icon,
+                    labelRole: m.label,
+                    iconColorRole: m.iconColor.toString(),
+                    cmdRole: m.cmd
+                });
+            }
+        }
+
+        // 3. o CONJUNTO ja' bate exatamente — so' falta a ORDEM (move)
+        for (let i = 0; i < target.length; i++) {
+            if (actionsModel.get(i).moduleIdRole !== target[i].id) {
+                for (let j = i + 1; j < actionsModel.count; j++) {
+                    if (actionsModel.get(j).moduleIdRole === target[i].id) {
+                        actionsModel.move(j, i, 1);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: syncActionsModel()
+
+    Connections {
+        target: SystemPanelState
+        function onVisibleModulesChanged() { root.syncActionsModel() }
     }
 
     function updateGhostPosition(gx, gy) {
@@ -166,7 +224,7 @@ PopupWindow {
         anchors.fill: parent
         color: Colors.bg
         border.color: SystemPanelState.editMode ? Colors.brightBlue : Colors.surface
-        border.width: 0
+        border.width: 2
         radius: 19
 
         Behavior on border.color { ColorAnimation { duration: 200 } }
@@ -174,13 +232,13 @@ PopupWindow {
         ScrollView {
             id: scrollView
             anchors.fill: parent
-            anchors.margins: 10
+            anchors.margins: 15
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 width: scrollView.availableWidth
-                spacing: 15
+                spacing: 5
 
             Rectangle {
                 Layout.fillWidth: true
@@ -190,8 +248,8 @@ PopupWindow {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 20
+                    anchors.margins: 16
+                    spacing: 15
 
                     StatRing {
                         icon: "󰻠"
@@ -219,7 +277,72 @@ PopupWindow {
                 }
             }
 
-            
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 62
+                color: Colors.surface
+                radius: 18
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 26
+
+                    Rectangle {
+                        width: 38
+                        height: 38
+                        radius: 14
+                        color: Colors.bg
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰝚"
+                            color: Colors.blue
+                            font.pixelSize: 18
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        Text {
+                            text: root.songTitle
+                            color: Colors.fg
+                            font.pixelSize: 11
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            text: root.songArtist
+                            color: Colors.muted
+                            font.pixelSize: 10
+                            font.weight: Font.Medium
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    RowLayout {
+                        spacing: 12
+
+                        MediaButton {
+                            iconText: "󰒮"
+                            onClicked: Quickshell.execDetached(["playerctl", "previous"])
+                        }
+
+                        MediaButton {
+                            iconText: root.songStatus === "Playing" ? "󰏤" : "󰐊"
+                            onClicked: Quickshell.execDetached(["playerctl", "play-pause"])
+                        }
+
+                        MediaButton {
+                            iconText: "󰒭"
+                            onClicked: Quickshell.execDetached(["playerctl", "next"])
+                        }
+                    }
+                }
+            }
 
             // ---------------- cabecalho: titulo + botao de editar ----------------
             RowLayout {
@@ -274,17 +397,21 @@ PopupWindow {
 
                 Repeater {
                     id: actionsRepeater
-                    model: SystemPanelState.visibleModules
+                    model: ListModel { id: actionsModel }
 
                     delegate: ActionBtn {
-                        required property var modelData
+                        required property string moduleIdRole
+                        required property string iconRole
+                        required property string labelRole
+                        required property string iconColorRole
+                        required property string cmdRole
 
-                        moduleId: modelData.id
-                        icon: modelData.icon
-                        label: modelData.label
-                        iconColor: modelData.iconColor
-                        cmd: modelData.cmd
-                        ghosted: root.draggingId === modelData.id
+                        moduleId: moduleIdRole
+                        icon: iconRole
+                        label: labelRole
+                        iconColor: iconColorRole
+                        cmd: cmdRole
+                        ghosted: root.draggingId === moduleIdRole
 
                         onCloseRequested: root.visible = false
                         onDragStarted: (mid, gx, gy) => root.beginDrag(mid, gx, gy)

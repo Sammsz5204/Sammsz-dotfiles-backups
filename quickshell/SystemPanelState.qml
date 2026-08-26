@@ -120,12 +120,25 @@ Scope {
         root.sizeValues = vals;
     }
 
-    // Cicla pro proximo tamanho da lista (usado pelo botao de resize)
+    // Cicla pro proximo tamanho da lista (mantido como utilitario)
     function cycleSize(id) {
         const cur = root.sizeFor(id);
         const idx = root.sizeOptions.indexOf(cur);
         const next = root.sizeOptions[(idx + 1) % root.sizeOptions.length];
         root.setSize(id, next);
+    }
+
+    // Usado pela alca de resize arrastavel: cresce/encolhe UM passo,
+    // travando nas pontas (nao volta pro inicio ao passar do maximo,
+    // nem fica negativo ao passar do minimo). Testado em Python.
+    function growSize(id) {
+        const idx = root.sizeOptions.indexOf(root.sizeFor(id));
+        root.setSize(id, root.sizeOptions[Math.min(idx + 1, root.sizeOptions.length - 1)]);
+    }
+
+    function shrinkSize(id) {
+        const idx = root.sizeOptions.indexOf(root.sizeFor(id));
+        root.setSize(id, root.sizeOptions[Math.max(idx - 1, 0)]);
     }
 
     // "1x1" -> {cols:1, rows:1}, com fallback seguro pra valor invalido

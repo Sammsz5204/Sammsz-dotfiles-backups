@@ -167,7 +167,7 @@ PanelWindow {
                     "-c",
                     "free -b | awk '/Mem:/ {printf \"%.1fG/%.1fG\", $3/1073741824, $2/1073741824}'"
                 ] 
-                intervalMs: 30000 
+                intervalMs: 5000 
             }
 
             TrayModule {
