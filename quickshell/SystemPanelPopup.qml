@@ -231,10 +231,38 @@ PopupWindow {
 
         ScrollView {
             id: scrollView
-            anchors.fill: parent
-            anchors.margins: 15
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.topMargin: 15
+            anchors.bottomMargin: 15
+            anchors.leftMargin: 15
+            // Margem direita maior de proposito: sobra um "corredor"
+            // vazio pra barra de rolagem fina viver, sem encostar nas
+            // alcas de resize que espetam ~4px pra fora de cada tile
+            // da coluna da direita (era ali que ficava dificil de
+            // pegar a alca antes).
+            anchors.rightMargin: 22
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+            // Barra fina e discreta (a padrao do Qt e' larga e chama
+            // mais atencao do que precisa aqui) — so' aparece quando
+            // da pra rolar de verdade.
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+                width: 4
+
+                contentItem: Rectangle {
+                    implicitWidth: 4
+                    radius: 2
+                    color: Colors.muted
+                    opacity: 0.6
+                }
+
+                background: Item {}
+            }
 
             ColumnLayout {
                 width: scrollView.availableWidth

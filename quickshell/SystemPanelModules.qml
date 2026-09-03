@@ -28,7 +28,7 @@ QtObject {
         { id: "close",         label: "Fechar",       icon: "󰅖", iconColor: Colors.brightRed,   cmd: "__CLOSE__" },
         { id: "wall_random",   label: "Wall (Aleat)", icon: "󰸉", iconColor: Colors.brightGreen, cmd: "~/.config/scripts/random_wallpaper.sh &" },
         { id: "wall_menu",     label: "Wall (Menu)",  icon: "󰄄", iconColor: Colors.brightBlue,  cmd: "lua5.1 /home/sam/.config/scripts/wallchanger.lua &" },
-        { id: "reload_qs",     label: "Reload QS",    icon: "󰑐", iconColor: Colors.muted,       cmd: "killall quickshell && quickshell" },
+        { id: "reload_qs",     label: "Reload QS",    icon: "󰑐", iconColor: Colors.muted,       cmd: "killall qs && qs" },
         { id: "reload_hypr",   label: "Reload Hypr",  icon: "󰑐", iconColor: Colors.muted,       cmd: "hyprctl reload" },
     ]
 

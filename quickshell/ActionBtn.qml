@@ -10,7 +10,7 @@ import Quickshell
 // invisivel e sem efeito nenhum quando SystemPanelState.editMode e'
 // false. Uso normal continua identico a antes.
 // ============================================================
-Rectangle {
+Item {
     id: root
 
     property string moduleId: ""
@@ -29,68 +29,68 @@ Rectangle {
     signal dragMoved(real globalX, real globalY)
     signal dragEnded()
 
+    // "root" e' so' o SLOT que o GridLayout gerencia — nunca aparece
+    // na tela por si (nao tem cor/borda propria). A doc oficial do
+    // proprio tipo Layout avisa: "It is not recommended to have
+    // bindings to the x, y, width, or height properties of items in a
+    // layout" — colocar Behavior nessas 4 propriedades AQUI (que e'
+    // exatamente o que causava o "teleporta e so' depois estica": a
+    // animacao brigando com a escrita do proprio motor de layout) e'
+    // o padrao que a doc pede pra evitar.
+    //
+    // Quem de fato aparece e anima e' o bgRect logo abaixo: ele so'
+    // "persegue" width/height de root (propriedades NOSSAS, livres pra
+    // ter Behavior) ficando sempre centralizado — cresce/encolhe a
+    // partir do centro, sem pular.
     Layout.fillWidth: true
     Layout.preferredHeight: 65
     Layout.columnSpan: SystemPanelState.spanFor(moduleId).cols
     Layout.rowSpan: SystemPanelState.spanFor(moduleId).rows
 
-    // So liga os Behaviors abaixo DEPOIS que o layout inicial ja'
-    // assentou uma vez. Sem isso, a primeira abertura do painel tambem
-    // "anima" (cada tile parece crescer/deslizar do zero na hora de
-    // montar) — nao e' isso que a gente quer, so' o resize de verdade
-    // deve animar. Qt.callLater empurra a troca pro proximo ciclo do
-    // event loop, depois que o primeiro layout sincrono ja rodou.
+    // So' liga o Behavior do bgRect DEPOIS que o layout inicial ja'
+    // assentou uma vez — sem isso a primeira abertura do painel tambem
+    // "cresce" do zero, o que nao e' o que a gente quer.
     property bool animReady: false
     Component.onCompleted: Qt.callLater(() => root.animReady = true)
 
-    // O span (Layout.columnSpan/rowSpan) e' um numero inteiro — nao da
-    // pra "animar" 1->2 suavemente, o Qt so' sabe pular. O que da pra
-    // animar e' o width/height/x/y de VERDADE que o GridLayout calcula
-    // pra esse item a cada mudanca de span — e' nisso que o Behavior
-    // pega, fazendo o tile "esticar" com uma mola em vez de saltar na
-    // hora. x/y entraram porque crescer o span pode empurrar o proprio
-    // tile pra outra linha/coluna (o "teleporte" reportado: sem
-    // Behavior nisso, a posicao pulava instantanea e so' DEPOIS o
-    // tamanho animava, descolado). Ainda so' nesse tile, nao nos
-    // vizinhos — nao mexi em nada do arrastar, que ja ficou perfeito.
-    Behavior on width {
-        enabled: root.animReady
-        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-    }
-    Behavior on height {
-        enabled: root.animReady
-        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-    }
-    Behavior on x {
-        enabled: root.animReady
-        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-    }
-    Behavior on y {
-        enabled: root.animReady
-        NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-    }
+    Rectangle {
+        id: bgRect
 
-    opacity: ghosted ? 0 : 1
-    Behavior on opacity { NumberAnimation { duration: 100 } }
+        anchors.centerIn: parent
+        width: root.width
+        height: root.height
 
-    // Fundo tonal liso, sem borda. Clareia no hover e escurece no press.
-    color: mArea.pressed
-        ? Colors.surface
-        : (mArea.containsMouse ? Qt.lighter(Colors.surface, 1.9) : Colors.surface)
+        Behavior on width {
+            enabled: root.animReady
+            NumberAnimation { duration: 300; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+        }
+        Behavior on height {
+            enabled: root.animReady
+            NumberAnimation { duration: 300; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+        }
 
-    border.width: SystemPanelState.editMode ? 2 : 0
-    border.color: Colors.brightBlue
-    Behavior on border.width { NumberAnimation { duration: 150 } }
+        opacity: root.ghosted ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 100 } }
 
-    // Efeito Squish (esmaga no clique) e Float (cresce no hover)
-    radius: mArea.pressed ? 10 : (mArea.containsMouse ? 20 : 15)
+        // Fundo tonal liso, sem borda. Clareia no hover e escurece no press.
+        color: mArea.pressed
+            ? Colors.surface
+            : (mArea.containsMouse ? Qt.lighter(Colors.surface, 1.9) : Colors.surface)
 
-    Behavior on radius {
-        NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
-    }
+        border.width: SystemPanelState.editMode ? 2 : 0
+        border.color: Colors.brightBlue
+        Behavior on border.width { NumberAnimation { duration: 150 } }
 
-    Behavior on color {
-        ColorAnimation { duration: 150 }
+        // Efeito Squish (esmaga no clique) e Float (cresce no hover)
+        radius: mArea.pressed ? 10 : (mArea.containsMouse ? 20 : 15)
+
+        Behavior on radius {
+            NumberAnimation { duration: 250; easing.type: Easing.OutBack; easing.overshoot: 0.5 }
+        }
+
+        Behavior on color {
+            ColorAnimation { duration: 150 }
+        }
     }
 
     ColumnLayout {
